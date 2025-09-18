@@ -4,11 +4,9 @@ use tracing_subscriber::{
     layer::{Layer, SubscriberExt},
     EnvFilter, Registry,
 };
+use zalo_types::{AppConfig, LogFormat};
 
-use crate::{
-    config::{AppConfig, LogFormat},
-    error::{CoreError, CoreResult, ObservabilityError},
-};
+use crate::error::{BotError, BotResult, ObservabilityError};
 
 /// Builds a tracing dispatcher based on the runtime configuration.
 ///
@@ -17,7 +15,8 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use zalo_core::{build_tracing_dispatch, ConfigLoader};
+/// use zalo_bot::{build_tracing_dispatch, init_tracing};
+/// use zalo_types::ConfigLoader;
 ///
 /// # fn demo() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigLoader::default().load()?;
@@ -52,13 +51,14 @@ pub fn build_tracing_dispatch(config: &AppConfig) -> Result<Dispatch, Observabil
 ///
 /// # Errors
 ///
-/// Returns [`CoreError::Observability`] when the dispatcher cannot be built or
+/// Returns [`BotError::Observability`] when the dispatcher cannot be built or
 /// when the global subscriber has already been installed.
 ///
 /// # Examples
 ///
 /// ```
-/// use zalo_core::{init_tracing, ConfigLoader};
+/// use zalo_bot::init_tracing;
+/// use zalo_types::ConfigLoader;
 ///
 /// # fn demo() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigLoader::default().load()?;
@@ -71,18 +71,20 @@ pub fn build_tracing_dispatch(config: &AppConfig) -> Result<Dispatch, Observabil
 /// # }
 /// # demo().expect("example executed");
 /// ```
-pub fn init_tracing(config: &AppConfig) -> CoreResult<()> {
-    let dispatch = build_tracing_dispatch(config).map_err(CoreError::from)?;
+pub fn init_tracing(config: &AppConfig) -> BotResult<()> {
+    let dispatch = build_tracing_dispatch(config)?;
     dispatcher::set_global_default(dispatch)
-        .map_err(|source| CoreError::from(ObservabilityError::from(source)))
+        .map_err(ObservabilityError::from)
+        .map_err(BotError::from)?;
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::config::LoggingConfig;
-    use masterror::{AppError, AppErrorKind};
+    use zalo_types::{AppError, AppErrorKind, LoggingConfig};
 
     #[test]
     fn builds_dispatcher_for_text_logs() {
@@ -104,7 +106,7 @@ mod tests {
             ObservabilityError::InvalidFilter { filter, .. } => {
                 assert_eq!(filter, "=info");
             }
-            other => panic!("unexpected error: {:?}", other),
+            other => panic!("unexpected error: {other:?}"),
         }
     }
 

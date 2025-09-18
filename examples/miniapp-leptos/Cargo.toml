@@ -1,0 +1,10 @@
+[package]
+name = "miniapp-leptos"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Demo mini app wiring using the Zalo SDK"
+license.workspace = true
+
+[dependencies]
+zalo-sdk = { path = "../../crates/zalo-sdk" }

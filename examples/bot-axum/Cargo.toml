@@ -1,0 +1,12 @@
+[package]
+name = "bot-axum"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Axum webhook demo for the Zalo bot"
+license.workspace = true
+
+[dependencies]
+tracing.workspace = true
+zalo-bot = { path = "../../crates/zalo-bot" }
+zalo-types = { path = "../../crates/zalo-types" }

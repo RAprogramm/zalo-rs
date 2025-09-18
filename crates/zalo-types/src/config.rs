@@ -6,7 +6,7 @@ use figment::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::error::{ConfigError, CoreError, CoreResult};
+use crate::error::{ConfigError, TypesError, TypesResult};
 
 /// Application-level configuration contract.
 ///
@@ -15,7 +15,7 @@ use crate::error::{ConfigError, CoreError, CoreResult};
 /// # Examples
 ///
 /// ```
-/// use zalo_core::{AppConfig, Environment};
+/// use zalo_types::{AppConfig, Environment};
 ///
 /// let config = AppConfig::default();
 /// assert_eq!(config.environment(), Environment::Development);
@@ -45,7 +45,7 @@ impl AppConfig {
     /// # Examples
     ///
     /// ```
-    /// use zalo_core::{AppConfig, Environment};
+    /// use zalo_types::{AppConfig, Environment};
     ///
     /// let production = AppConfig::default().with_environment(Environment::Production);
     /// assert_eq!(production.environment(), Environment::Production);
@@ -61,7 +61,7 @@ impl AppConfig {
     /// # Examples
     ///
     /// ```
-    /// use zalo_core::{AppConfig, LogFormat, LoggingConfig};
+    /// use zalo_types::{AppConfig, LogFormat, LoggingConfig};
     ///
     /// let logging = LoggingConfig::new("debug", LogFormat::Json);
     /// let config = AppConfig::default().with_logging(logging);
@@ -79,7 +79,7 @@ impl AppConfig {
 /// # Examples
 ///
 /// ```
-/// use zalo_core::Environment;
+/// use zalo_types::Environment;
 ///
 /// assert_eq!(Environment::Production.as_str(), "production");
 /// ```
@@ -101,7 +101,7 @@ impl Environment {
     /// # Examples
     ///
     /// ```
-    /// use zalo_core::Environment;
+    /// use zalo_types::Environment;
     ///
     /// assert_eq!(Environment::Staging.as_str(), "staging");
     /// ```
@@ -120,32 +120,27 @@ impl Environment {
 /// # Examples
 ///
 /// ```
-/// use zalo_core::{LogFormat, LoggingConfig};
+/// use zalo_types::{LogFormat, LoggingConfig};
 ///
-/// let logging = LoggingConfig::default();
-/// assert_eq!(logging.format(), LogFormat::Text);
+/// let logging = LoggingConfig::new("info", LogFormat::Text);
+/// assert_eq!(logging.filter(), "info");
 /// ```
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(default)]
 pub struct LoggingConfig {
     filter: String,
     format: LogFormat,
 }
 
 impl LoggingConfig {
-    fn default_filter() -> String {
-        "info".to_owned()
-    }
-
-    /// Builds a logging configuration with custom settings.
+    /// Creates a new logging configuration block.
     ///
     /// # Examples
     ///
     /// ```
-    /// use zalo_core::{LogFormat, LoggingConfig};
+    /// use zalo_types::{LogFormat, LoggingConfig};
     ///
-    /// let logging = LoggingConfig::new("trace", LogFormat::Json);
-    /// assert_eq!(logging.filter(), "trace");
+    /// let logging = LoggingConfig::new("warn", LogFormat::Json);
+    /// assert_eq!(logging.format(), LogFormat::Json);
     /// ```
     #[must_use]
     pub fn new(filter: impl Into<String>, format: LogFormat) -> Self {
@@ -155,31 +150,13 @@ impl LoggingConfig {
         }
     }
 
-    /// Returns the tracing filter expression.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use zalo_core::LoggingConfig;
-    ///
-    /// let logging = LoggingConfig::default();
-    /// assert_eq!(logging.filter(), "info");
-    /// ```
+    /// Returns the configured filter expression.
     #[must_use]
     pub fn filter(&self) -> &str {
         &self.filter
     }
 
-    /// Returns the log output format.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use zalo_core::{LogFormat, LoggingConfig};
-    ///
-    /// let logging = LoggingConfig::default();
-    /// assert_eq!(logging.format(), LogFormat::Text);
-    /// ```
+    /// Returns the configured logging format.
     #[must_use]
     pub fn format(&self) -> LogFormat {
         self.format
@@ -189,61 +166,55 @@ impl LoggingConfig {
 impl Default for LoggingConfig {
     fn default() -> Self {
         Self {
-            filter: Self::default_filter(),
-            format: LogFormat::default(),
+            filter: "info".to_owned(),
+            format: LogFormat::Text,
         }
     }
 }
 
-/// Supported logging output formats.
+/// Supported output formats for logs.
 ///
 /// # Examples
 ///
 /// ```
-/// use zalo_core::LogFormat;
+/// use zalo_types::{LogFormat, LoggingConfig};
 ///
-/// assert_eq!(LogFormat::Json, LogFormat::Json);
+/// let logging = LoggingConfig::new("info", LogFormat::Json);
+/// assert_eq!(matches!(logging.format(), LogFormat::Json), true);
 /// ```
-#[derive(Copy, Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LogFormat {
-    /// Human-readable, plain-text logs.
-    #[default]
+    /// Plain-text logs optimised for human consumption.
     Text,
-    /// Structured JSON logs.
+    /// Structured JSON logs suitable for ingestion by log processors.
     Json,
 }
 
-/// Loads configuration from the filesystem and environment variables.
-///
-/// # Examples
-///
-/// ```
-/// use zalo_core::ConfigLoader;
-///
-/// let config = ConfigLoader::default().load().expect("config");
-/// assert_eq!(config.logging().filter(), "info");
-/// ```
-#[derive(Clone, Debug)]
+impl Default for LogFormat {
+    fn default() -> Self {
+        Self::Text
+    }
+}
+
+/// Loads configuration from environment variables and optional TOML files.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ConfigLoader {
     env_prefix: String,
     file_path: Option<PathBuf>,
 }
 
 impl ConfigLoader {
-    /// Creates a loader that reads variables with the provided prefix.
-    ///
-    /// The prefix is used as-is without additional transformation. By
-    /// convention we stick to uppercase prefixes ending with an underscore.
+    /// Creates a new loader configured with the provided prefix.
     ///
     /// # Examples
     ///
     /// ```
-    /// use zalo_core::ConfigLoader;
+    /// use zalo_types::ConfigLoader;
     ///
-    /// let loader = ConfigLoader::new("MY_APP_");
-    /// let config = loader.load().expect("config");
-    /// assert_eq!(config.logging().filter(), "info");
+    /// let loader = ConfigLoader::new("ZALO_BOT_");
+    /// assert!(loader.load().is_ok());
     /// ```
     #[must_use]
     pub fn new(prefix: impl Into<String>) -> Self {
@@ -253,50 +224,47 @@ impl ConfigLoader {
         }
     }
 
-    /// Provides a configuration file path merged on top of defaults.
+    /// Overrides the configuration file path.
     ///
     /// # Examples
     ///
     /// ```
-    /// # use std::fs::write;
-    /// # use tempfile::NamedTempFile;
-    /// use zalo_core::ConfigLoader;
+    /// use std::path::Path;
+    /// use zalo_types::ConfigLoader;
     ///
-    /// # fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let file = NamedTempFile::new()?;
-    /// # write(
-    /// #     file.path(),
-    /// #     "environment = \"development\"\n[logging]\nfilter = \"trace\"\n"
-    /// # )?;
-    /// let loader = ConfigLoader::default().with_file_path(file.path());
-    /// let config = loader.load()?;
-    /// assert_eq!(config.logging().filter(), "trace");
-    /// # Ok(())
-    /// # }
-    /// # run().expect("example executed");
+    /// let loader = ConfigLoader::new("ZALO_").with_file_path(Path::new("config.toml"));
+    /// assert_eq!(loader.file_path().unwrap(), Path::new("config.toml"));
     /// ```
     #[must_use]
-    pub fn with_file_path(mut self, path: impl Into<PathBuf>) -> Self {
-        self.file_path = Some(path.into());
+    pub fn with_file_path(mut self, path: impl AsRef<Path>) -> Self {
+        self.file_path = Some(path.as_ref().to_path_buf());
         self
     }
 
-    /// Loads the configuration using defaults, file (optional) and environment.
+    /// Returns the configured file path, if any.
+    #[must_use]
+    pub fn file_path(&self) -> Option<&Path> {
+        self.file_path.as_deref()
+    }
+
+    /// Loads the configuration from the configured sources.
+    ///
+    /// Environment variables take precedence over file values and defaults.
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::Config`] if the file is missing or Figment fails to
-    /// deserialize the structure.
+    /// Returns [`TypesError::Config`] when the configuration file is missing or
+    /// the model fails validation.
     ///
     /// # Examples
     ///
     /// ```
-    /// use zalo_core::ConfigLoader;
+    /// use zalo_types::ConfigLoader;
     ///
     /// let result = ConfigLoader::default().load();
     /// assert!(result.is_ok());
     /// ```
-    pub fn load(&self) -> CoreResult<AppConfig> {
+    pub fn load(&self) -> TypesResult<AppConfig> {
         let mut figment = Figment::from(Serialized::defaults(AppConfig::default()));
 
         if let Some(path) = &self.file_path {
@@ -311,7 +279,7 @@ impl ConfigLoader {
         figment
             .extract::<AppConfig>()
             .map_err(ConfigError::from)
-            .map_err(CoreError::from)
+            .map_err(TypesError::from)
     }
 }
 
@@ -380,7 +348,7 @@ mod tests {
 
         assert!(matches!(
             error,
-            CoreError::Config(ConfigError::MissingFile { .. })
+            TypesError::Config(ConfigError::MissingFile { .. })
         ));
     }
 

@@ -1,18 +1,15 @@
 [package]
-name = "zalo-core"
+name = "zalo-types"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
-description = "Core utilities for the Zalo bot platform"
+description = "Shared types, configuration and error definitions for the Zalo platform"
 license.workspace = true
 
 [dependencies]
 figment.workspace = true
 masterror.workspace = true
 serde.workspace = true
-serde_json.workspace = true
-tracing.workspace = true
-tracing-subscriber.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
