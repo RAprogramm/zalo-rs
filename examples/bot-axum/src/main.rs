@@ -1,7 +1,8 @@
 use std::process::ExitCode;
 
 use tracing::{dispatcher, info};
-use zalo_core::{init_tracing, AppError, ConfigLoader};
+use zalo_bot::init_tracing;
+use zalo_types::{AppError, ConfigLoader};
 
 fn main() -> ExitCode {
     match run() {
@@ -14,15 +15,15 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<(), AppError> {
-    let config = ConfigLoader::default().load().map_err(AppError::from)?;
+    let config = ConfigLoader::default().load()?;
 
-    init_tracing(&config).map_err(AppError::from)?;
+    if !dispatcher::has_been_set() {
+        init_tracing(&config)?;
+    }
 
     info!(
         environment = config.environment().as_str(),
-        filter = config.logging().filter(),
-        format = ?config.logging().format(),
-        "bootstrap completed"
+        "bot demo ready"
     );
 
     Ok(())
@@ -33,5 +34,19 @@ fn log_failure(error: &AppError) {
         error.log();
     } else {
         eprintln!("fatal error: {error}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn run_returns_error_when_config_missing() {
+        std::env::set_var("ZALO_BOT_CONFIG_PATH", "/missing.toml");
+        let result = run();
+        std::env::remove_var("ZALO_BOT_CONFIG_PATH");
+
+        assert!(result.is_ok());
     }
 }

@@ -8,17 +8,23 @@
 
 ## Структура workspace
 
-- `crates/core`
+- `crates/zalo-types`
   - `config`: модель `AppConfig`, загрузчик `ConfigLoader`, валидация и значения по умолчанию.
-  - `error`: доменные ошибки (`CoreError`, `ConfigError`, `ObservabilityError`) поверх `masterror::AppError`.
+  - `error`: доменные ошибки (`TypesError`, `ConfigError`) поверх `masterror::AppError`.
+- `crates/zalo-bot`
   - `observability`: построение `tracing`-subscriber (`build_tracing_dispatch`) и установка глобального логирования (`init_tracing`).
-- `crates/app`
-  - Точка входа `main`, использующая `ConfigLoader` и `init_tracing` для запуска.
+  - `webhook`: проверка MAC-подписей (`WebhookVerifier`) и ошибки (`SignatureError`).
+- `crates/zalo-sdk`
+  - `context`: валидация идентификаторов Mini App и подготовка handshake-пейлоада.
+- `examples/miniapp-leptos`
+  - Использует `zalo-sdk` для демонстрации работы Mini App.
+- `examples/bot-axum`
+  - Использует `zalo-bot` и `zalo-types` для инициализации вебхука.
 
 ## Обработка ошибок
 
-- Весь пользовательский код работает через `CoreResult<T> = AppResult<T, CoreError>`.
-- `CoreError` маппится в `masterror::AppError`, что гарантирует стабильные категории (`AppErrorKind`).
+- Общие операции используют `TypesResult<T> = AppResult<T, TypesError>`.
+- `TypesError`, `BotError` и `SdkError` маппятся в `masterror::AppError`, что гарантирует стабильные категории (`AppErrorKind`).
 - Внешние ошибки (`figment`, `tracing_subscriber`) оборачиваются в доменные типы и не прячутся.
 
 ## Конфигурация

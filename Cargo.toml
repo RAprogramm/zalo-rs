@@ -1,7 +1,10 @@
 [workspace]
 members = [
-    "crates/app",
-    "crates/core",
+    "crates/zalo-types",
+    "crates/zalo-sdk",
+    "crates/zalo-bot",
+    "examples/miniapp-leptos",
+    "examples/bot-axum",
 ]
 resolver = "2"
 

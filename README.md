@@ -73,8 +73,11 @@
 
 Репозиторий собран как многокорневой workspace:
 
-- `crates/core` — базовые утилиты: загрузка конфигурации (`ConfigLoader`), инфраструктурные ошибки (`CoreError`) на основе [`masterror`](https://crates.io/crates/masterror) и настройка логирования (`init_tracing`).
-- `crates/app` — исполняемый бинарник, который использует `core` для запуска, инициализирует трассировку и выводит информацию о среде.
+- `crates/zalo-types` — общие типы, конфигурация (`ConfigLoader`) и маппинг ошибок на [`masterror`](https://crates.io/crates/masterror).
+- `crates/zalo-sdk` — лёгкий SDK для Mini App (валидация контекста, генерация handshake-пейлоада).
+- `crates/zalo-bot` — утилиты для OA Bot: инициализация логирования (`init_tracing`) и проверка вебхук-подписей (`WebhookVerifier`).
+- `examples/miniapp-leptos` — демонстрация использования SDK на стороне Mini App.
+- `examples/bot-axum` — пример инициализации вебхука на базе `zalo-bot`.
 
 ### Конфигурация
 

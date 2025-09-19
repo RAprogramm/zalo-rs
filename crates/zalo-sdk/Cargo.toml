@@ -1,0 +1,15 @@
+[package]
+name = "zalo-sdk"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "WASM-friendly SDK utilities for Zalo mini apps"
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+thiserror.workspace = true
+zalo-types = { path = "../zalo-types" }
+
+[dev-dependencies]
+serde_json.workspace = true
