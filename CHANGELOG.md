@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2024-05-23
+
+### Added
+- Support for overriding the configuration file path via the `ZALO_BOT_CONFIG_PATH` environment variable in `ConfigLoader`, including error propagation when the file is missing.
+
+### Changed
+- The `bot-axum` example test now expects a configuration error when the override points to a missing file, matching the loader behaviour.
+
 ## [0.1.2] - 2024-05-22
 
 ### Added

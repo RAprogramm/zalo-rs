@@ -97,7 +97,7 @@ This repository is organised as a multi-crate workspace:
 
 ### Configuration
 
-`ConfigLoader` reads environment variables prefixed with `ZALO_BOT_` and an optional TOML file. Supported sections:
+`ConfigLoader` reads environment variables prefixed with `ZALO_BOT_` and an optional TOML file. The file path can be supplied via the `ZALO_BOT_CONFIG_PATH` environment variable when it should not be hard-coded. Supported sections:
 
 - `environment` — one of `development`, `staging`, or `production`.
 - `[logging]` — fields `filter` (expression for `tracing_subscriber::EnvFilter`) and `format` (`text` or `json`).

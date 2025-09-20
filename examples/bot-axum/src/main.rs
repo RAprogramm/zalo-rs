@@ -47,6 +47,7 @@ mod tests {
         let result = run();
         std::env::remove_var("ZALO_BOT_CONFIG_PATH");
 
-        assert!(result.is_ok());
+        let error = result.expect_err("config path should be required");
+        assert!(matches!(error.kind, zalo_types::AppErrorKind::Config));
     }
 }
