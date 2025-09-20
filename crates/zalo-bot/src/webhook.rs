@@ -58,8 +58,7 @@ impl WebhookVerifier {
         let signature = signature.ok_or(SignatureError::Missing)?;
         let signature_bytes =
             hex::decode(signature).map_err(|_| SignatureError::VerificationFailed)?;
-        let mut mac =
-            HmacSha256::new_from_slice(&self.secret).map_err(SignatureError::from)?;
+        let mut mac = HmacSha256::new_from_slice(&self.secret).map_err(SignatureError::from)?;
         mac.update(payload);
         mac.verify_slice(&signature_bytes)
             .map_err(|_| SignatureError::VerificationFailed)?;
