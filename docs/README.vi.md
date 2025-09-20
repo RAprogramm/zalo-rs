@@ -2,7 +2,7 @@
 
 > Tài liệu đa ngôn ngữ cho lớp tích hợp Zalo Official Account (OA) viết bằng Rust.
 
-**Ngôn ngữ khác:** [English](../README.md)
+**Ngôn ngữ khác:** [English](../README.md) · [Tiếng Nga](README.ru.md)
 
 ## Mục tiêu dự án
 

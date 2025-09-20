@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2024-05-22
+
+### Added
+- Russian translation stored in `docs/README.ru.md` with cross-links to English and Vietnamese guides.
+
+### Changed
+- Highlighted all three supported languages in the primary README and Vietnamese translation index.
+
+
 ## [0.1.1] - 2024-05-21
 
 ### Added

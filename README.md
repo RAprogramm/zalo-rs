@@ -2,7 +2,7 @@
 
 > Production-ready, multilingual documentation for the Rust integration with the Zalo Official Account (OA) platform.
 
-**Translations:** [Tiếng Việt](docs/README.vi.md)
+**Translations:** [Русский](docs/README.ru.md) · [Tiếng Việt](docs/README.vi.md)
 
 ## Project goals
 
