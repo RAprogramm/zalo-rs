@@ -87,7 +87,7 @@
 
 ### Конфигурация
 
-`ConfigLoader` считывает переменные окружения с префиксом `ZALO_BOT_` и необязательный TOML-файл. Поддерживаемые секции:
+`ConfigLoader` считывает переменные окружения с префиксом `ZALO_BOT_` и необязательный TOML-файл. Путь к файлу можно задать через переменную окружения `ZALO_BOT_CONFIG_PATH`, если его нельзя захардкодить. Поддерживаемые секции:
 
 - `environment` — одно из значений `development`, `staging` или `production`.
 - `[logging]` — поля `filter` (выражение для `tracing_subscriber::EnvFilter`) и `format` (`text` или `json`).

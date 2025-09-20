@@ -1,3 +1,4 @@
+use std::env;
 use std::path::{Path, PathBuf};
 
 use figment::{
@@ -198,6 +199,10 @@ impl Default for LogFormat {
 }
 
 /// Loads configuration from environment variables and optional TOML files.
+///
+/// The loader honours an environment variable named `{prefix}CONFIG_PATH`
+/// (for example `ZALO_BOT_CONFIG_PATH`) which, when set, overrides any file
+/// path configured via [`with_file_path`](Self::with_file_path).
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ConfigLoader {
@@ -267,9 +272,15 @@ impl ConfigLoader {
     pub fn load(&self) -> TypesResult<AppConfig> {
         let mut figment = Figment::from(Serialized::defaults(AppConfig::default()));
 
-        if let Some(path) = &self.file_path {
+        let env_path = env_config_path(&self.env_prefix);
+        let resolved_path = env_path.as_deref().or(self.file_path.as_deref());
+
+        if let Some(path) = resolved_path {
             if !path_exists(path) {
-                return Err(ConfigError::MissingFile { path: path.clone() }.into());
+                return Err(ConfigError::MissingFile {
+                    path: path.to_path_buf(),
+                }
+                .into());
             }
             figment = figment.merge(Toml::file(path));
         }
@@ -293,6 +304,20 @@ fn path_exists(path: &Path) -> bool {
     path.exists()
 }
 
+fn env_config_path(prefix: &str) -> Option<PathBuf> {
+    let mut key = String::with_capacity(prefix.len() + "CONFIG_PATH".len());
+    key.push_str(prefix);
+    key.push_str("CONFIG_PATH");
+
+    let value = env::var(&key).ok()?;
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(PathBuf::from(trimmed))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -309,6 +334,7 @@ mod tests {
         std::env::remove_var("ZALO_BOT_ENVIRONMENT");
         std::env::remove_var("ZALO_BOT_LOGGING__FILTER");
         std::env::remove_var("ZALO_BOT_LOGGING__FORMAT");
+        std::env::remove_var("ZALO_BOT_CONFIG_PATH");
 
         let config = ConfigLoader::default()
             .load()
@@ -325,6 +351,7 @@ mod tests {
         std::env::set_var("ZALO_BOT_ENVIRONMENT", "production");
         std::env::set_var("ZALO_BOT_LOGGING__FILTER", "debug");
         std::env::set_var("ZALO_BOT_LOGGING__FORMAT", "json");
+        std::env::remove_var("ZALO_BOT_CONFIG_PATH");
 
         let config = ConfigLoader::default()
             .load()
@@ -376,5 +403,65 @@ mod tests {
         assert_eq!(config.environment(), Environment::Staging);
         assert_eq!(config.logging().filter(), "warn");
         assert_eq!(config.logging().format(), LogFormat::Text);
+    }
+
+    #[test]
+    fn env_config_path_missing_file_errors() {
+        let _guard = ENV_GUARD.lock().expect("lock poisoned");
+        std::env::set_var("ZALO_BOT_CONFIG_PATH", "/definitely/missing.toml");
+
+        let error = ConfigLoader::default()
+            .load()
+            .expect_err("missing env file should error");
+
+        std::env::remove_var("ZALO_BOT_CONFIG_PATH");
+
+        assert!(matches!(
+            error,
+            TypesError::Config(ConfigError::MissingFile { .. })
+        ));
+    }
+
+    #[test]
+    fn env_config_path_overrides_loader_setting() {
+        let _guard = ENV_GUARD.lock().expect("lock poisoned");
+        let env_file = NamedTempFile::new().expect("temp file");
+        write(
+            env_file.path(),
+            r#"
+                environment = "staging"
+
+                [logging]
+                filter = "trace"
+                format = "json"
+            "#,
+        )
+        .expect("write env config");
+
+        let fallback = NamedTempFile::new().expect("fallback file");
+        write(
+            fallback.path(),
+            r#"
+                environment = "production"
+
+                [logging]
+                filter = "info"
+                format = "text"
+            "#,
+        )
+        .expect("write fallback config");
+
+        std::env::set_var("ZALO_BOT_CONFIG_PATH", env_file.path());
+
+        let config = ConfigLoader::default()
+            .with_file_path(fallback.path())
+            .load()
+            .expect("env config should load");
+
+        std::env::remove_var("ZALO_BOT_CONFIG_PATH");
+
+        assert_eq!(config.environment(), Environment::Staging);
+        assert_eq!(config.logging().filter(), "trace");
+        assert_eq!(config.logging().format(), LogFormat::Json);
     }
 }

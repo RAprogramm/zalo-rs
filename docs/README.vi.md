@@ -93,7 +93,7 @@ Kho mã được tổ chức thành workspace nhiều crate:
 
 ### Cấu hình
 
-`ConfigLoader` đọc biến môi trường với tiền tố `ZALO_BOT_` và (nếu có) tệp TOML. Các phần được hỗ trợ:
+`ConfigLoader` đọc biến môi trường với tiền tố `ZALO_BOT_` và (nếu có) tệp TOML. Có thể chỉ định đường dẫn tệp qua biến môi trường `ZALO_BOT_CONFIG_PATH` khi không muốn hard-code. Các phần được hỗ trợ:
 
 - `environment` — một trong `development`, `staging` hoặc `production`.
 - `[logging]` — trường `filter` (biểu thức cho `tracing_subscriber::EnvFilter`) và `format` (`text` hoặc `json`).
