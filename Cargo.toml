@@ -11,7 +11,7 @@ resolver = "2"
 [workspace.package]
 edition = "2021"
 license = "MIT OR Apache-2.0"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["Zalo Bot Team <dev@zalo.ai>"]
 description = "Zalo bot platform implemented in Rust"
 

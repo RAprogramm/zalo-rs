@@ -1,92 +1,110 @@
 # Zalo Bot
 
-Проект нацелен на полноценную и безопасную интеграцию с Zalo Official Account (OA) API. Основной артефакт на текущем этапе — детализация требований к клиентской библиотеке бота и список API-методов, которые необходимо реализовать для полного покрытия возможностей официального API.
+> Production-ready, multilingual documentation for the Rust integration with the Zalo Official Account (OA) platform.
 
-## Обзор Zalo Official Account API
+**Translations:** [Русский](docs/README.ru.md) · [Tiếng Việt](docs/README.vi.md)
 
-- **Базовый URL**: `https://openapi.zalo.me/v3.0/oa/`. В большинстве методов путь продолжает этот префикс и уточняет домен (например, `message/cs`, `tag/gettagsofoa`).
-- **Типы сообщений**: Customer Service (`cs`), Transaction (`transaction`), Promotion (`promotion`). Выбор типа влияет на ограничения отправки и допустимый контент.
-- **Форматы контента**: текст, вложения с типами `image`, `file`, шаблоны (`template`) со списками элементов и кнопками.
-- **Заголовки запросов**: все вызовы требуют заголовка `access_token` с действительным OA Access Token и корректного `Content-Type` (`application/json` или `multipart/form-data`).
+## Project goals
 
-## Аутентификация и управление токенами
+This repository delivers a safe, end-to-end integration layer for the Zalo Official Account API. The current focus is to document
+all required capabilities, stabilise the Rust workspace layout, and provide building blocks for bots and mini apps that comply
+with the official platform policies.
 
-1. Создайте OA на [Zalo Business](https://business.zalo.me/).
-2. Зарегистрируйте приложение в [Zalo Developers](https://developers.zalo.me/) и получите App ID, Secret Key, OA ID и Access Token.
-3. Храните и обновляйте Access Token и Refresh Token — ошибки `-204` и `-240` сигнализируют об истечении токена либо необходимости перехода на API v3.
-4. Приём входящих событий настраивается через HTTPS вебхуки с проверкой MAC-подписи.
+## Zalo Official Account API overview
 
-## Ограничения платформы
+- **Base URL:** `https://openapi.zalo.me/v3.0/oa/`. Most endpoints extend this prefix with a domain-specific segment such as
+  `message/cs` or `tag/gettagsofoa`.
+- **Message types:** Customer Service (`cs`), Transaction (`transaction`), and Promotion (`promotion`). The chosen type affects
+  delivery constraints and permissible content.
+- **Content formats:** plain text, attachments (`image`, `file`), and list-based templates with buttons.
+- **Request headers:** each call must provide a valid OA `access_token` header and the appropriate `Content-Type` (`application/json`
+  or `multipart/form-data`).
 
-- **Лимиты**: типичные ограничения составляют 10 запросов в секунду на OA. Ошибка `-210` сигнализирует о превышении.
-- **Ограничение 24 часов**: сообщение за пределами 24-часового окна вызовет ошибку `-214`, поэтому необходимо вести учёт последнего контакта.
-- **Политики контента**: нарушение правил приводит к ошибке `-215`; стоит внедрять валидацию и модерацию сообщений до отправки.
+## Authentication and token lifecycle
 
-## Ключевые домены API
+1. Create an OA at [Zalo Business](https://business.zalo.me/).
+2. Register an app on [Zalo Developers](https://developers.zalo.me/) to obtain the App ID, Secret Key, OA ID, and Access Token.
+3. Store and rotate both the Access Token and Refresh Token. Errors `-204` and `-240` indicate an expired token or a required
+   migration to API v3.
+4. Configure HTTPS webhooks for inbound events and verify the MAC signature for every payload.
 
-| Домен | Ключевые endpoint'ы | Назначение |
+## Platform constraints
+
+- **Rate limiting:** typical OA quotas allow roughly 10 requests per second. Error `-210` indicates the limit was exceeded.
+- **24-hour messaging window:** sending a message beyond the 24-hour window triggers error `-214`; bots must track the latest
+  user interaction timestamp.
+- **Content policy enforcement:** violations result in error `-215`. Implement validation and moderation before dispatching
+  messages.
+
+## Key API domains
+
+| Domain | Representative endpoints | Purpose |
 | --- | --- | --- |
-| Сообщения | `message/{messageType}` | Текстовые сообщения, изображения, файлы, списки и шаблоны. |
-| Управление подписчиками | `getoa`, `getprofile`, `getfollowers`, `updatefollowerinfo` | Получение профилей, списка подписчиков и обновление данных. |
-| Диалоги | `listrecentchat`, `conversation` | Получение списка чатов и истории переписки. |
-| Медиа | `upload/image`, `upload/file`, `upload/gif` | Загрузка вложений для дальнейшей отправки. |
-| Теги | `tag/gettagsofoa`, `tag/tagfollower`, `tag/rmfollowerfromtag` | Управление тегами и сегментацией аудитории. |
-| Контент OA | `article/create`, `article/upload_video/*`, `article/verify` | Публикация статей, работа с видео и проверка статей. |
-| Магазин | `store/product/*`, `store/order/*` | Управление товарами и заказами OA Store. |
-| Вебхук | Пользовательский URL | Приём событий: follow/unfollow, сообщения, клики, подтверждение MAC. |
+| Messaging | `message/{messageType}` | Text, media, list, and template message delivery. |
+| Subscriber management | `getoa`, `getprofile`, `getfollowers`, `updatefollowerinfo` | Access OA profiles, follower lists, and update metadata. |
+| Conversations | `listrecentchat`, `conversation` | Retrieve chat lists and conversation history. |
+| Media | `upload/image`, `upload/file`, `upload/gif` | Upload attachments for later use. |
+| Tags | `tag/gettagsofoa`, `tag/tagfollower`, `tag/rmfollowerfromtag` | Manage audience segmentation through tags. |
+| OA content | `article/create`, `article/upload_video/*`, `article/verify` | Publish articles, manage videos, and verify drafts. |
+| Store | `store/product/*`, `store/order/*` | Maintain OA Store products and orders. |
+| Webhook | Custom URL | Receive follow/unfollow events, inbound messages, clicks, and MAC verification callbacks. |
 
-Полный перечень методов и структур поддерживается в [`docs/progress.md`](docs/progress.md).
+A detailed checklist of methods and data contracts lives in [`docs/progress.md`](docs/progress.md).
 
-## Вебхуки и события
+## Webhooks and events
 
-Вебхук OA принимает POST-запросы с полями `app_id`, `sender.id`, `recipient.id`, `event_name`, `timestamp`, `message` и `mac`. Нужно реализовать проверку подписи и поддержку событий:
+OA webhooks receive POST payloads containing `app_id`, `sender.id`, `recipient.id`, `event_name`, `timestamp`, `message`, and `mac`.
+The integration must verify the MAC signature and support the following events:
 
-- **Пользовательские события**: `follow`, `unfollow`.
-- **Сообщения**: `user_send_text`, `user_send_image`, `user_send_file`, `user_send_sticker`, `user_send_gif`, `user_send_location`.
-- **Интеракции**: `user_click_link`, `user_click_button`, `user_received_message`, `user_seen_message`.
+- **User lifecycle:** `follow`, `unfollow`.
+- **Messaging:** `user_send_text`, `user_send_image`, `user_send_file`, `user_send_sticker`, `user_send_gif`, `user_send_location`.
+- **Interactions:** `user_click_link`, `user_click_button`, `user_received_message`, `user_seen_message`.
 
-## Диагностика и обработка ошибок
+## Diagnostics and error handling
 
-Распространённые коды ошибок Zalo OA API:
+Common Zalo OA API error codes:
 
-| Код | Значение |
+| Code | Meaning |
 | --- | --- |
-| `-201` | Отсутствуют обязательные параметры. |
-| `-202` | Неверные значения параметров. |
-| `-204` | Недействительный или истёкший Access Token. |
-| `-205` | Недостаточно прав у OA. |
-| `-210` | Превышен rate limit. |
-| `-211` | OA не прошёл верификацию. |
-| `-213` | Пользователь не подписан на OA. |
-| `-214` | Сообщение отправлено вне 24-часового окна. |
-| `-215` | Контент нарушает политику. |
-| `-216` | Дубликат сообщения. |
-| `-240` | Используется устаревший API v2. |
+| `-201` | Required parameters are missing. |
+| `-202` | Parameter values are invalid. |
+| `-204` | Access Token is invalid or expired. |
+| `-205` | OA lacks sufficient permissions. |
+| `-210` | Rate limit exceeded. |
+| `-211` | OA failed verification. |
+| `-213` | User is not subscribed to the OA. |
+| `-214` | Message sent outside the 24-hour window. |
+| `-215` | Content violates platform policies. |
+| `-216` | Duplicate message detected. |
+| `-240` | Legacy API v2 is in use and must be upgraded. |
 
-## Как пользоваться репозиторием
+## How to work with this repository
 
-- Переходите в [`docs/progress.md`](docs/progress.md), чтобы отслеживать закрытие каждого endpoint'а и связанной бизнес-логики.
-- Добавляйте ADR и примеры при реализации подсистем, чтобы документировать архитектурные решения и сценарии отказов.
-- Перед реализацией конкретного метода проверяйте требования по аутентификации, лимитам и формату данных для выбранного домена.
+- Track endpoint coverage and required business logic in [`docs/progress.md`](docs/progress.md).
+- Contribute ADRs and runnable examples alongside subsystem implementations to document architectural decisions and failure modes.
+- Before coding against a specific endpoint, review authentication requirements, rate limits, and payload formats for the
+  corresponding domain.
 
-## Rust-платформа
+## Rust workspace structure
 
-Репозиторий собран как многокорневой workspace:
+This repository is organised as a multi-crate workspace:
 
-- `crates/zalo-types` — общие типы, конфигурация (`ConfigLoader`) и маппинг ошибок на [`masterror`](https://crates.io/crates/masterror).
-- `crates/zalo-sdk` — лёгкий SDK для Mini App (валидация контекста, генерация handshake-пейлоада).
-- `crates/zalo-bot` — утилиты для OA Bot: инициализация логирования (`init_tracing`) и проверка вебхук-подписей (`WebhookVerifier`).
-- `examples/miniapp-leptos` — демонстрация использования SDK на стороне Mini App.
-- `examples/bot-axum` — пример инициализации вебхука на базе `zalo-bot`.
+- `crates/zalo-types` — shared types, configuration loader (`ConfigLoader`), and error mapping built on [`masterror`](https://crates.io/crates/masterror).
+- `crates/zalo-sdk` — lightweight Mini App SDK providing context validation and handshake payload generation.
+- `crates/zalo-bot` — OA bot utilities: tracing initialisation (`init_tracing`) and webhook signature verification (`WebhookVerifier`).
+- `examples/miniapp-leptos` — sample Mini App that demonstrates SDK usage.
+- `examples/bot-axum` — webhook bootstrap example powered by `zalo-bot`.
 
-### Конфигурация
+### Configuration
 
-`ConfigLoader` по умолчанию читает переменные окружения с префиксом `ZALO_BOT_` и необязательный TOML-файл. Поддерживаются секции:
+`ConfigLoader` reads environment variables prefixed with `ZALO_BOT_` and an optional TOML file. Supported sections:
 
-- `environment` — `development` | `staging` | `production`.
-- `[logging]` — поля `filter` (выражение для `tracing_subscriber::EnvFilter`) и `format` (`text` или `json`).
+- `environment` — one of `development`, `staging`, or `production`.
+- `[logging]` — fields `filter` (expression for `tracing_subscriber::EnvFilter`) and `format` (`text` or `json`).
 
-### Проверка качества
+### Quality gates
+
+Run the following commands before submitting changes to guarantee consistent formatting, linting, tests, and documentation:
 
 ```
 cargo +nightly fmt --
@@ -95,4 +113,5 @@ cargo test --all
 cargo doc --no-deps
 ```
 
-Эти команды обязательны перед публикацией изменений: форматирование, линтинг, тесты и генерация документации должны проходить без ошибок.
+Security and dependency hygiene checks use `cargo audit` and `cargo deny`.
+

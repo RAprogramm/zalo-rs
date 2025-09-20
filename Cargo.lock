@@ -37,7 +37,7 @@ dependencies = [
 
 [[package]]
 name = "bot-axum"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "tracing",
  "zalo-bot",
@@ -264,7 +264,7 @@ checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
 
 [[package]]
 name = "miniapp-leptos"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "zalo-sdk",
 ]
@@ -833,7 +833,7 @@ checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 
 [[package]]
 name = "zalo-bot"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "hex",
  "hmac",
@@ -848,7 +848,7 @@ dependencies = [
 
 [[package]]
 name = "zalo-sdk"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -858,7 +858,7 @@ dependencies = [
 
 [[package]]
 name = "zalo-types"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "figment",
  "masterror",

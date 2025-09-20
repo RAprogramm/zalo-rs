@@ -1,0 +1,12 @@
+[advisories]
+db-path = "$CARGO_HOME"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+
+[licenses]
+allow = ["MIT", "Apache-2.0", "BSD-3-Clause", "Unicode-3.0"]
+
+[bans]
+multiple-versions = "warn"
+
+[sources]
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
