@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Highlighted all three supported languages in the primary README and Vietnamese translation index.
 
+
 ## [0.1.1] - 2024-05-21
 
 ### Added
