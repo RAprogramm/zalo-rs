@@ -10,7 +10,6 @@ license.workspace = true
 figment.workspace = true
 masterror.workspace = true
 serde.workspace = true
-thiserror.workspace = true
 
 [dev-dependencies]
-tempfile = "3.22.0"
+tempfile = "3"

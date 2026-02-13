@@ -1,5 +1,5 @@
 use hmac::digest::InvalidLength;
-use thiserror::Error;
+use masterror::Error;
 use tracing::dispatcher::SetGlobalDefaultError;
 use tracing_subscriber::filter::ParseError as FilterParseError;
 use zalo_types::{AppError, AppErrorKind, AppResult, TypesError};
@@ -18,7 +18,7 @@ pub enum BotError {
     Observability(#[from] ObservabilityError),
     /// Incoming webhook signature is not valid.
     #[error(transparent)]
-    Signature(#[from] SignatureError),
+    Signature(#[from] SignatureError)
 }
 
 impl From<BotError> for AppError {
@@ -26,7 +26,7 @@ impl From<BotError> for AppError {
         match error {
             BotError::Types(inner) => inner.into(),
             BotError::Observability(inner) => inner.into(),
-            BotError::Signature(inner) => inner.into(),
+            BotError::Signature(inner) => inner.into()
         }
     }
 }
@@ -41,26 +41,26 @@ pub enum ObservabilityError {
         filter: String,
         /// Source parse error raised by `tracing-subscriber`.
         #[source]
-        source: FilterParseError,
+        source: FilterParseError
     },
     /// Failed to install the global tracing subscriber.
     #[error("failed to install tracing subscriber: {source}")]
     Install {
         /// Source error triggered when installing the global subscriber.
         #[from]
-        source: SetGlobalDefaultError,
-    },
+        source: SetGlobalDefaultError
+    }
 }
 
 impl From<ObservabilityError> for AppError {
     fn from(error: ObservabilityError) -> Self {
         match &error {
-            ObservabilityError::InvalidFilter { .. } => {
-                AppError::with(AppErrorKind::Config, error.to_string())
-            }
-            ObservabilityError::Install { .. } => {
-                AppError::with(AppErrorKind::Internal, error.to_string())
-            }
+            ObservabilityError::InvalidFilter {
+                ..
+            } => AppError::with(AppErrorKind::Config, error.to_string()),
+            ObservabilityError::Install {
+                ..
+            } => AppError::with(AppErrorKind::Internal, error.to_string())
         }
     }
 }
@@ -76,7 +76,7 @@ pub enum SignatureError {
     VerificationFailed,
     /// The configured secret has an invalid length for the HMAC algorithm.
     #[error("invalid secret length: {0}")]
-    InvalidSecretLength(#[from] InvalidLength),
+    InvalidSecretLength(#[from] InvalidLength)
 }
 
 impl From<SignatureError> for AppError {
@@ -94,8 +94,9 @@ impl From<SignatureError> for AppError {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tracing_subscriber::EnvFilter;
+
+    use super::*;
 
     #[test]
     fn observability_filter_maps_to_config_error() {
@@ -104,7 +105,7 @@ mod tests {
             .expect_err("invalid filter should trigger an error");
         let error = ObservabilityError::InvalidFilter {
             filter: "=".to_owned(),
-            source: parse_error,
+            source: parse_error
         };
         let app_error = AppError::from(error);
 

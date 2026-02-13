@@ -1,9 +1,7 @@
-use std::error::Error as StdError;
-use std::path::PathBuf;
+use std::{error::Error as StdError, path::PathBuf};
 
 use figment::Error as FigmentError;
-use masterror::{AppError, AppErrorKind, AppResult};
-use thiserror::Error;
+use masterror::{AppError, AppErrorKind, AppResult, Error};
 
 /// Result alias for operations in the `zalo-types` crate.
 ///
@@ -24,8 +22,8 @@ pub enum TypesError {
         message: String,
         /// Optional source error for richer diagnostics.
         #[source]
-        source: Option<Box<dyn StdError + Send + Sync>>,
-    },
+        source:  Option<Box<dyn StdError + Send + Sync>>
+    }
 }
 
 impl TypesError {
@@ -43,7 +41,7 @@ impl TypesError {
     pub fn with_message(message: impl Into<String>) -> Self {
         Self::Other {
             message: message.into(),
-            source: None,
+            source:  None
         }
     }
 
@@ -56,16 +54,24 @@ impl TypesError {
     ///
     /// let source = std::io::Error::new(std::io::ErrorKind::Other, "io");
     /// let error = TypesError::with_message("failed").with_source(source);
-    /// assert!(matches!(error, TypesError::Other { source: Some(_), .. }));
+    /// assert!(matches!(
+    ///     error,
+    ///     TypesError::Other {
+    ///         source: Some(_),
+    ///         ..
+    ///     }
+    /// ));
     /// ```
     #[must_use]
     pub fn with_source(self, source: impl StdError + Send + Sync + 'static) -> Self {
         match self {
-            Self::Other { message, .. } => Self::Other {
+            Self::Other {
+                message, ..
+            } => Self::Other {
                 message,
-                source: Some(Box::new(source)),
+                source: Some(Box::new(source))
             },
-            other => other,
+            other => other
         }
     }
 }
@@ -77,21 +83,21 @@ pub enum ConfigError {
     #[error("configuration file not found at {path}")]
     MissingFile {
         /// Path to the configuration file that could not be found.
-        path: PathBuf,
+        path: PathBuf
     },
     /// Figment was unable to extract the configuration model.
     #[error("failed to extract configuration: {source}")]
     Extraction {
         /// Source extraction error produced by Figment.
         #[source]
-        source: Box<FigmentError>,
-    },
+        source: Box<FigmentError>
+    }
 }
 
 impl From<FigmentError> for ConfigError {
     fn from(error: FigmentError) -> Self {
         Self::Extraction {
-            source: Box::new(error),
+            source: Box::new(error)
         }
     }
 }
@@ -106,7 +112,9 @@ impl From<TypesError> for AppError {
     fn from(error: TypesError) -> Self {
         match error {
             TypesError::Config(inner) => inner.into(),
-            TypesError::Other { message, .. } => AppError::with(AppErrorKind::Internal, message),
+            TypesError::Other {
+                message, ..
+            } => AppError::with(AppErrorKind::Internal, message)
         }
     }
 }
@@ -118,7 +126,7 @@ mod tests {
     #[test]
     fn config_error_maps_to_app_error() {
         let error = ConfigError::MissingFile {
-            path: PathBuf::from("/tmp/missing.toml"),
+            path: PathBuf::from("/tmp/missing.toml")
         };
         let app_error = AppError::from(error);
 
@@ -139,10 +147,12 @@ mod tests {
         let error = TypesError::with_message("failure").with_source(source);
 
         match error {
-            TypesError::Other { source, .. } => {
+            TypesError::Other {
+                source, ..
+            } => {
                 assert!(source.is_some());
             }
-            other => panic!("unexpected error: {other:?}"),
+            other => panic!("unexpected error: {other:?}")
         }
     }
 }

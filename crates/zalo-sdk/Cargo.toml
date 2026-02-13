@@ -8,7 +8,7 @@ license.workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
-thiserror.workspace = true
+masterror.workspace = true
 zalo-types = { path = "../zalo-types" }
 
 [dev-dependencies]

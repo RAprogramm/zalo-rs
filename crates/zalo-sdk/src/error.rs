@@ -1,4 +1,4 @@
-use thiserror::Error;
+use masterror::Error;
 use zalo_types::{AppError, AppErrorKind, AppResult};
 
 /// Result alias for operations in the SDK crate.
@@ -12,7 +12,7 @@ pub enum SdkError {
     InvalidAppId(String),
     /// Provided OA identifier is empty or malformed.
     #[error("invalid oa identifier: {0}")]
-    InvalidOaId(String),
+    InvalidOaId(String)
 }
 
 impl From<SdkError> for AppError {
