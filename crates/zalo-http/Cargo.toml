@@ -1,0 +1,19 @@
+[package]
+name = "zalo-http"
+description = "Async HTTP client for the Zalo Official Account API"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+masterror = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+zalo-types = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

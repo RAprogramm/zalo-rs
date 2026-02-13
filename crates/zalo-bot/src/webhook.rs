@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
+// SPDX-License-Identifier: MIT
+
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 
@@ -31,8 +34,6 @@ impl WebhookVerifier {
     /// ```
     pub fn new(secret: impl AsRef<[u8]>) -> Result<Self, SignatureError> {
         let secret_bytes = secret.as_ref();
-        // Ensure the secret satisfies the requirements of the underlying HMAC
-        // implementation.
         HmacSha256::new_from_slice(secret_bytes)?;
 
         Ok(Self {
@@ -40,7 +41,27 @@ impl WebhookVerifier {
         })
     }
 
-    /// Computes the expected signature for a payload.
+    /// Computes the expected HMAC-SHA256 signature for a payload.
+    ///
+    /// The returned value is a lowercase hex-encoded string suitable for
+    /// inclusion in a response header or comparison against an incoming value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SignatureError::InvalidSecretLength`] when the stored secret
+    /// is rejected by the HMAC implementation (should not occur in practice
+    /// after successful construction).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use zalo_bot::webhook::WebhookVerifier;
+    ///
+    /// let verifier = WebhookVerifier::new("secret")?;
+    /// let sig = verifier.sign_payload(b"hello")?;
+    /// assert!(!sig.is_empty());
+    /// # Ok::<_, Box<dyn std::error::Error>>(())
+    /// ```
     pub fn sign_payload(&self, payload: &[u8]) -> Result<String, SignatureError> {
         let mut mac = HmacSha256::new_from_slice(&self.secret)?;
         mac.update(payload);
@@ -55,6 +76,17 @@ impl WebhookVerifier {
     /// Returns [`SignatureError::Missing`] when the signature header is absent
     /// and [`SignatureError::VerificationFailed`] when the signature does not
     /// match the payload.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use zalo_bot::webhook::WebhookVerifier;
+    ///
+    /// let verifier = WebhookVerifier::new("secret")?;
+    /// let sig = verifier.sign_payload(b"body")?;
+    /// verifier.verify(b"body", Some(&sig))?;
+    /// # Ok::<_, Box<dyn std::error::Error>>(())
+    /// ```
     pub fn verify(&self, payload: &[u8], signature: Option<&str>) -> BotResult<()> {
         let signature = signature.ok_or(SignatureError::Missing)?;
         let signature_bytes =
@@ -70,7 +102,10 @@ impl WebhookVerifier {
 
 #[cfg(test)]
 mod tests {
+    use zalo_types::AppErrorKind;
+
     use super::*;
+    use crate::error::SignatureError;
 
     #[test]
     fn verifies_valid_signature() {
@@ -89,10 +124,7 @@ mod tests {
         let error = verifier.verify(b"payload", None).expect_err("missing");
         let app_error = zalo_types::AppError::from(error);
 
-        assert!(matches!(
-            app_error.kind,
-            zalo_types::AppErrorKind::Unauthorized
-        ));
+        assert!(matches!(app_error.kind, AppErrorKind::Unauthorized));
     }
 
     #[test]
@@ -101,6 +133,51 @@ mod tests {
         let error = verifier
             .verify(b"payload", Some("deadbeef"))
             .expect_err("invalid signature");
+
+        assert!(matches!(
+            error,
+            crate::error::BotError::Signature(SignatureError::VerificationFailed)
+        ));
+    }
+
+    #[test]
+    fn rejects_signature_for_wrong_payload() {
+        let verifier = WebhookVerifier::new("secret").expect("verifier");
+        let correct_sig = verifier.sign_payload(b"correct").expect("signature");
+        let error = verifier
+            .verify(b"wrong", Some(&correct_sig))
+            .expect_err("wrong payload");
+
+        assert!(matches!(
+            error,
+            crate::error::BotError::Signature(SignatureError::VerificationFailed)
+        ));
+    }
+
+    #[test]
+    fn sign_payload_is_deterministic() {
+        let verifier = WebhookVerifier::new("secret").expect("verifier");
+        let sig1 = verifier.sign_payload(b"same").expect("sig1");
+        let sig2 = verifier.sign_payload(b"same").expect("sig2");
+
+        assert_eq!(sig1, sig2);
+    }
+
+    #[test]
+    fn different_payloads_produce_different_signatures() {
+        let verifier = WebhookVerifier::new("secret").expect("verifier");
+        let sig1 = verifier.sign_payload(b"payload-a").expect("sig1");
+        let sig2 = verifier.sign_payload(b"payload-b").expect("sig2");
+
+        assert_ne!(sig1, sig2);
+    }
+
+    #[test]
+    fn rejects_non_hex_signature() {
+        let verifier = WebhookVerifier::new("secret").expect("verifier");
+        let error = verifier
+            .verify(b"payload", Some("not-valid-hex!!"))
+            .expect_err("non-hex signature");
 
         assert!(matches!(
             error,

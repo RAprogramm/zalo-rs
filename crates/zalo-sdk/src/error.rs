@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
+// SPDX-License-Identifier: MIT
+
 use masterror::Error;
 use zalo_types::{AppError, AppErrorKind, AppResult};
 
@@ -30,5 +33,18 @@ mod tests {
         let app_error = AppError::from(SdkError::InvalidAppId("".to_owned()));
 
         assert!(matches!(app_error.kind, AppErrorKind::Validation));
+    }
+
+    #[test]
+    fn invalid_oa_id_maps_to_validation_kind() {
+        let app_error = AppError::from(SdkError::InvalidOaId("".to_owned()));
+
+        assert!(matches!(app_error.kind, AppErrorKind::Validation));
+    }
+
+    #[test]
+    fn sdk_error_display_contains_value() {
+        let err = SdkError::InvalidAppId("bad-id".to_owned());
+        assert!(err.to_string().contains("bad-id"));
     }
 }

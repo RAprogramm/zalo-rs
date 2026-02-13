@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
+// SPDX-License-Identifier: MIT
+
 use hmac::digest::InvalidLength;
 use masterror::Error;
 use tracing::dispatcher::SetGlobalDefaultError;
@@ -120,10 +123,29 @@ mod tests {
     }
 
     #[test]
+    fn missing_signature_maps_to_unauthorized_kind() {
+        let app_error = AppError::from(SignatureError::Missing);
+
+        assert!(matches!(app_error.kind, AppErrorKind::Unauthorized));
+    }
+
+    #[test]
     fn bot_error_from_types_preserves_kind() {
         let types_error = TypesError::with_message("boom");
         let app_error = AppError::from(BotError::from(types_error));
 
         assert!(matches!(app_error.kind, AppErrorKind::Internal));
+    }
+
+    #[test]
+    fn signature_error_display_messages() {
+        assert_eq!(
+            SignatureError::Missing.to_string(),
+            "missing webhook signature header"
+        );
+        assert_eq!(
+            SignatureError::VerificationFailed.to_string(),
+            "webhook signature verification failed"
+        );
     }
 }

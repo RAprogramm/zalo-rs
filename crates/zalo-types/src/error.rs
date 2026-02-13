@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-use std::{error::Error as StdError, fmt, path::PathBuf};
+use std::{
+    error::Error as StdError,
+    fmt::{Display, Formatter, Result as FmtResult},
+    path::PathBuf
+};
 
 use figment::Error as FigmentError;
 use masterror::{AppError, AppErrorKind, AppResult, Error};
@@ -60,8 +64,8 @@ pub enum ConfigError {
     }
 }
 
-impl fmt::Display for ConfigError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ConfigError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             Self::MissingFile {
                 path
@@ -117,6 +121,8 @@ impl From<TypesError> for AppError {
 
 #[cfg(test)]
 mod tests {
+    use figment::Figment;
+
     use super::*;
 
     #[test]
@@ -149,7 +155,7 @@ mod tests {
 
     #[test]
     fn config_error_source_is_some_for_extraction() {
-        let figment_error = figment::Figment::new().extract::<String>().unwrap_err();
+        let figment_error = Figment::new().extract::<String>().unwrap_err();
         let error = ConfigError::from(figment_error);
 
         assert!(StdError::source(&error).is_some());
@@ -162,5 +168,11 @@ mod tests {
         };
 
         assert!(StdError::source(&error).is_none());
+    }
+
+    #[test]
+    fn types_error_with_message_displays_correctly() {
+        let err = TypesError::with_message("test error message");
+        assert_eq!(err.to_string(), "test error message");
     }
 }

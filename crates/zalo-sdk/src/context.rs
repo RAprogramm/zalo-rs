@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
+// SPDX-License-Identifier: MIT
+
 use serde::{Deserialize, Serialize};
 
 use crate::error::{SdkError, SdkResult};
@@ -109,6 +112,27 @@ mod tests {
     }
 
     #[test]
+    fn rejects_whitespace_only_app_identifier() {
+        let error = MiniAppContext::new("   ", "oa").expect_err("whitespace app id");
+
+        assert!(matches!(error, SdkError::InvalidAppId(_)));
+    }
+
+    #[test]
+    fn rejects_empty_oa_identifier() {
+        let error = MiniAppContext::new("app", "").expect_err("empty oa id");
+
+        assert!(matches!(error, SdkError::InvalidOaId(_)));
+    }
+
+    #[test]
+    fn rejects_whitespace_only_oa_identifier() {
+        let error = MiniAppContext::new("app", "  ").expect_err("whitespace oa id");
+
+        assert!(matches!(error, SdkError::InvalidOaId(_)));
+    }
+
+    #[test]
     fn produces_handshake_payload() {
         let context = MiniAppContext::new("app", "oa").expect("context");
         let payload = context.handshake_payload();
@@ -117,5 +141,23 @@ mod tests {
         assert_eq!(payload.oa_id(), "oa");
         let json = serde_json::to_string(&payload).expect("serialise");
         assert!(json.contains("\"app_id\":\"app\""));
+    }
+
+    #[test]
+    fn handshake_payload_serialises_to_expected_json() {
+        let context = MiniAppContext::new("my-app", "my-oa").expect("context");
+        let payload = context.handshake_payload();
+        let value = serde_json::to_value(&payload).expect("to_value");
+
+        assert_eq!(value["app_id"], "my-app");
+        assert_eq!(value["oa_id"], "my-oa");
+    }
+
+    #[test]
+    fn context_accessors_return_correct_values() {
+        let context = MiniAppContext::new("app-123", "oa-456").expect("context");
+
+        assert_eq!(context.app_id(), "app-123");
+        assert_eq!(context.oa_id(), "oa-456");
     }
 }

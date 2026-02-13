@@ -1,8 +1,8 @@
+// SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
+// SPDX-License-Identifier: MIT
+
 use tracing::dispatcher::{self, Dispatch};
-use tracing_subscriber::{
-    EnvFilter, Registry, fmt,
-    layer::{Layer, SubscriberExt}
-};
+use tracing_subscriber::{EnvFilter, Registry, fmt, layer::SubscriberExt};
 use zalo_types::{AppConfig, LogFormat};
 
 use crate::error::{BotError, BotResult, ObservabilityError};
@@ -11,10 +11,15 @@ use crate::error::{BotError, BotResult, ObservabilityError};
 ///
 /// The caller can install the dispatcher manually or use [`init_tracing`].
 ///
+/// # Errors
+///
+/// Returns [`ObservabilityError::InvalidFilter`] when the filter expression
+/// in the configuration cannot be parsed.
+///
 /// # Examples
 ///
 /// ```
-/// use zalo_bot::{build_tracing_dispatch, init_tracing};
+/// use zalo_bot::build_tracing_dispatch;
 /// use zalo_types::ConfigLoader;
 ///
 /// # fn demo() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,14 +41,18 @@ pub fn build_tracing_dispatch(config: &AppConfig) -> Result<Dispatch, Observabil
         }
     })?;
 
-    let fmt_layer = match config.logging().format() {
-        LogFormat::Json => fmt::layer().json().boxed(),
-        LogFormat::Text => fmt::layer().boxed()
+    let dispatch = match config.logging().format() {
+        LogFormat::Json => {
+            let subscriber = Registry::default().with(filter).with(fmt::layer().json());
+            Dispatch::new(subscriber)
+        }
+        LogFormat::Text => {
+            let subscriber = Registry::default().with(filter).with(fmt::layer());
+            Dispatch::new(subscriber)
+        }
     };
 
-    let subscriber = Registry::default().with(filter).with(fmt_layer);
-
-    Ok(Dispatch::new(subscriber))
+    Ok(dispatch)
 }
 
 /// Installs the global tracing subscriber according to the configuration.
@@ -97,6 +106,17 @@ mod tests {
     }
 
     #[test]
+    fn builds_dispatcher_for_json_logs() {
+        let config =
+            AppConfig::default().with_logging(LoggingConfig::new("warn", LogFormat::Json));
+        let dispatch = build_tracing_dispatch(&config).expect("dispatcher");
+
+        tracing::dispatcher::with_default(&dispatch, || {
+            tracing::warn!("json log test");
+        });
+    }
+
+    #[test]
     fn rejects_invalid_filter_expression() {
         let config =
             AppConfig::default().with_logging(LoggingConfig::new("=info", LogFormat::Text));
@@ -117,13 +137,11 @@ mod tests {
         if tracing::dispatcher::has_been_set() {
             return;
         }
-        // Ensure we use a unique filter per test run to avoid collisions.
         let logging = LoggingConfig::new("warn", LogFormat::Text);
         let config = AppConfig::default().with_logging(logging);
 
         init_tracing(&config).expect("initialization should succeed");
 
-        // Subsequent attempts should fail with an install error.
         let second = init_tracing(&config).expect_err("second init must fail");
         let app_error = AppError::from(second);
         assert!(matches!(app_error.kind, AppErrorKind::Internal));

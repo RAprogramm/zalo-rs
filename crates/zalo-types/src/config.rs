@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
+// SPDX-License-Identifier: MIT
+
 use std::{
     env,
     path::{Path, PathBuf}
@@ -111,9 +114,9 @@ impl Environment {
     #[must_use]
     pub fn as_str(&self) -> &'static str {
         match self {
-            Environment::Development => "development",
-            Environment::Staging => "staging",
-            Environment::Production => "production"
+            Self::Development => "development",
+            Self::Staging => "staging",
+            Self::Production => "production"
         }
     }
 }
@@ -279,7 +282,7 @@ impl ConfigLoader {
         let resolved_path = env_path.as_deref().or(self.file_path.as_deref());
 
         if let Some(path) = resolved_path {
-            if !path_exists(path) {
+            if !path.exists() {
                 return Err(ConfigError::MissingFile {
                     path: path.to_path_buf()
                 }
@@ -301,10 +304,6 @@ impl Default for ConfigLoader {
     fn default() -> Self {
         Self::new("ZALO_BOT_")
     }
-}
-
-fn path_exists(path: &Path) -> bool {
-    path.exists()
 }
 
 fn env_config_path(prefix: &str) -> Option<PathBuf> {
@@ -334,10 +333,10 @@ mod tests {
     #[test]
     fn loads_default_configuration() {
         let _guard = ENV_GUARD.lock().expect("lock poisoned");
-        std::env::remove_var("ZALO_BOT_ENVIRONMENT");
-        std::env::remove_var("ZALO_BOT_LOGGING__FILTER");
-        std::env::remove_var("ZALO_BOT_LOGGING__FORMAT");
-        std::env::remove_var("ZALO_BOT_CONFIG_PATH");
+        env::remove_var("ZALO_BOT_ENVIRONMENT");
+        env::remove_var("ZALO_BOT_LOGGING__FILTER");
+        env::remove_var("ZALO_BOT_LOGGING__FORMAT");
+        env::remove_var("ZALO_BOT_CONFIG_PATH");
 
         let config = ConfigLoader::default()
             .load()
@@ -351,18 +350,18 @@ mod tests {
     #[test]
     fn merges_environment_variables() {
         let _guard = ENV_GUARD.lock().expect("lock poisoned");
-        std::env::set_var("ZALO_BOT_ENVIRONMENT", "production");
-        std::env::set_var("ZALO_BOT_LOGGING__FILTER", "debug");
-        std::env::set_var("ZALO_BOT_LOGGING__FORMAT", "json");
-        std::env::remove_var("ZALO_BOT_CONFIG_PATH");
+        env::set_var("ZALO_BOT_ENVIRONMENT", "production");
+        env::set_var("ZALO_BOT_LOGGING__FILTER", "debug");
+        env::set_var("ZALO_BOT_LOGGING__FORMAT", "json");
+        env::remove_var("ZALO_BOT_CONFIG_PATH");
 
         let config = ConfigLoader::default()
             .load()
             .expect("config should respect env overrides");
 
-        std::env::remove_var("ZALO_BOT_ENVIRONMENT");
-        std::env::remove_var("ZALO_BOT_LOGGING__FILTER");
-        std::env::remove_var("ZALO_BOT_LOGGING__FORMAT");
+        env::remove_var("ZALO_BOT_ENVIRONMENT");
+        env::remove_var("ZALO_BOT_LOGGING__FILTER");
+        env::remove_var("ZALO_BOT_LOGGING__FORMAT");
 
         assert_eq!(config.environment(), Environment::Production);
         assert_eq!(config.logging().filter(), "debug");
@@ -411,13 +410,13 @@ mod tests {
     #[test]
     fn env_config_path_missing_file_errors() {
         let _guard = ENV_GUARD.lock().expect("lock poisoned");
-        std::env::set_var("ZALO_BOT_CONFIG_PATH", "/definitely/missing.toml");
+        env::set_var("ZALO_BOT_CONFIG_PATH", "/definitely/missing.toml");
 
         let error = ConfigLoader::default()
             .load()
             .expect_err("missing env file should error");
 
-        std::env::remove_var("ZALO_BOT_CONFIG_PATH");
+        env::remove_var("ZALO_BOT_CONFIG_PATH");
 
         assert!(matches!(
             error,
@@ -454,17 +453,29 @@ mod tests {
         )
         .expect("write fallback config");
 
-        std::env::set_var("ZALO_BOT_CONFIG_PATH", env_file.path());
+        env::set_var("ZALO_BOT_CONFIG_PATH", env_file.path());
 
         let config = ConfigLoader::default()
             .with_file_path(fallback.path())
             .load()
             .expect("env config should load");
 
-        std::env::remove_var("ZALO_BOT_CONFIG_PATH");
+        env::remove_var("ZALO_BOT_CONFIG_PATH");
 
         assert_eq!(config.environment(), Environment::Staging);
         assert_eq!(config.logging().filter(), "trace");
         assert_eq!(config.logging().format(), LogFormat::Json);
+    }
+
+    #[test]
+    fn environment_as_str_variants() {
+        assert_eq!(Environment::Development.as_str(), "development");
+        assert_eq!(Environment::Staging.as_str(), "staging");
+        assert_eq!(Environment::Production.as_str(), "production");
+    }
+
+    #[test]
+    fn log_format_default_is_text() {
+        assert_eq!(LogFormat::default(), LogFormat::Text);
     }
 }
