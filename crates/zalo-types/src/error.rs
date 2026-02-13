@@ -1,4 +1,7 @@
-use std::{error::Error as StdError, path::PathBuf};
+// SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
+// SPDX-License-Identifier: MIT
+
+use std::{error::Error as StdError, fmt, path::PathBuf};
 
 use figment::Error as FigmentError;
 use masterror::{AppError, AppErrorKind, AppResult, Error};
@@ -19,10 +22,7 @@ pub enum TypesError {
     #[error("{message}")]
     Other {
         /// Human-readable error message.
-        message: String,
-        /// Optional source error for richer diagnostics.
-        #[source]
-        source:  Option<Box<dyn StdError + Send + Sync>>
+        message: String
     }
 }
 
@@ -40,57 +40,53 @@ impl TypesError {
     #[must_use]
     pub fn with_message(message: impl Into<String>) -> Self {
         Self::Other {
-            message: message.into(),
-            source:  None
-        }
-    }
-
-    /// Attaches a source error to an [`TypesError::Other`] value.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use zalo_types::TypesError;
-    ///
-    /// let source = std::io::Error::new(std::io::ErrorKind::Other, "io");
-    /// let error = TypesError::with_message("failed").with_source(source);
-    /// assert!(matches!(
-    ///     error,
-    ///     TypesError::Other {
-    ///         source: Some(_),
-    ///         ..
-    ///     }
-    /// ));
-    /// ```
-    #[must_use]
-    pub fn with_source(self, source: impl StdError + Send + Sync + 'static) -> Self {
-        match self {
-            Self::Other {
-                message, ..
-            } => Self::Other {
-                message,
-                source: Some(Box::new(source))
-            },
-            other => other
+            message: message.into()
         }
     }
 }
 
 /// Errors emitted when loading runtime configuration.
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum ConfigError {
     /// Configuration file is not accessible.
-    #[error("configuration file not found at {path}")]
     MissingFile {
         /// Path to the configuration file that could not be found.
         path: PathBuf
     },
     /// Figment was unable to extract the configuration model.
-    #[error("failed to extract configuration: {source}")]
     Extraction {
         /// Source extraction error produced by Figment.
-        #[source]
         source: Box<FigmentError>
+    }
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingFile {
+                path
+            } => {
+                write!(f, "configuration file not found at {}", path.display())
+            }
+            Self::Extraction {
+                source
+            } => {
+                write!(f, "failed to extract configuration: {source}")
+            }
+        }
+    }
+}
+
+impl StdError for ConfigError {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match self {
+            Self::Extraction {
+                source
+            } => Some(source.as_ref()),
+            Self::MissingFile {
+                ..
+            } => None
+        }
     }
 }
 
@@ -113,7 +109,7 @@ impl From<TypesError> for AppError {
         match error {
             TypesError::Config(inner) => inner.into(),
             TypesError::Other {
-                message, ..
+                message
             } => AppError::with(AppErrorKind::Internal, message)
         }
     }
@@ -142,17 +138,29 @@ mod tests {
     }
 
     #[test]
-    fn with_source_attaches_context() {
-        let source = std::io::Error::new(std::io::ErrorKind::Other, "io");
-        let error = TypesError::with_message("failure").with_source(source);
+    fn missing_file_display_contains_path() {
+        let path = PathBuf::from("/etc/zalo/config.toml");
+        let error = ConfigError::MissingFile {
+            path: path.clone()
+        };
 
-        match error {
-            TypesError::Other {
-                source, ..
-            } => {
-                assert!(source.is_some());
-            }
-            other => panic!("unexpected error: {other:?}")
-        }
+        assert!(error.to_string().contains("/etc/zalo/config.toml"));
+    }
+
+    #[test]
+    fn config_error_source_is_some_for_extraction() {
+        let figment_error = figment::Figment::new().extract::<String>().unwrap_err();
+        let error = ConfigError::from(figment_error);
+
+        assert!(StdError::source(&error).is_some());
+    }
+
+    #[test]
+    fn config_error_source_is_none_for_missing_file() {
+        let error = ConfigError::MissingFile {
+            path: PathBuf::from("/tmp/x")
+        };
+
+        assert!(StdError::source(&error).is_none());
     }
 }
