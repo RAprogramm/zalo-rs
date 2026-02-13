@@ -6,7 +6,7 @@ use crate::error::{SdkError, SdkResult};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MiniAppContext {
     app_id: String,
-    oa_id: String,
+    oa_id:  String
 }
 
 impl MiniAppContext {
@@ -37,7 +37,10 @@ impl MiniAppContext {
             return Err(SdkError::InvalidOaId(oa_id));
         }
 
-        Ok(Self { app_id, oa_id })
+        Ok(Self {
+            app_id,
+            oa_id
+        })
     }
 
     /// Returns the configured application identifier.
@@ -68,7 +71,7 @@ impl MiniAppContext {
     pub fn handshake_payload(&self) -> HandshakePayload {
         HandshakePayload {
             app_id: self.app_id.clone(),
-            oa_id: self.oa_id.clone(),
+            oa_id:  self.oa_id.clone()
         }
     }
 }
@@ -77,7 +80,7 @@ impl MiniAppContext {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct HandshakePayload {
     app_id: String,
-    oa_id: String,
+    oa_id:  String
 }
 
 impl HandshakePayload {

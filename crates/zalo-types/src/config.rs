@@ -1,9 +1,11 @@
-use std::env;
-use std::path::{Path, PathBuf};
+use std::{
+    env,
+    path::{Path, PathBuf}
+};
 
 use figment::{
-    providers::{Env, Format, Serialized, Toml},
     Figment,
+    providers::{Env, Format, Serialized, Toml}
 };
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +27,7 @@ use crate::error::{ConfigError, TypesError, TypesResult};
 #[serde(default)]
 pub struct AppConfig {
     environment: Environment,
-    logging: LoggingConfig,
+    logging:     LoggingConfig
 }
 
 impl AppConfig {
@@ -93,7 +95,7 @@ pub enum Environment {
     /// Internal staging/testing environment.
     Staging,
     /// Production deployment.
-    Production,
+    Production
 }
 
 impl Environment {
@@ -111,7 +113,7 @@ impl Environment {
         match self {
             Environment::Development => "development",
             Environment::Staging => "staging",
-            Environment::Production => "production",
+            Environment::Production => "production"
         }
     }
 }
@@ -129,7 +131,7 @@ impl Environment {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct LoggingConfig {
     filter: String,
-    format: LogFormat,
+    format: LogFormat
 }
 
 impl LoggingConfig {
@@ -147,7 +149,7 @@ impl LoggingConfig {
     pub fn new(filter: impl Into<String>, format: LogFormat) -> Self {
         Self {
             filter: filter.into(),
-            format,
+            format
         }
     }
 
@@ -168,7 +170,7 @@ impl Default for LoggingConfig {
     fn default() -> Self {
         Self {
             filter: "info".to_owned(),
-            format: LogFormat::Text,
+            format: LogFormat::Text
         }
     }
 }
@@ -189,7 +191,7 @@ pub enum LogFormat {
     /// Plain-text logs optimised for human consumption.
     Text,
     /// Structured JSON logs suitable for ingestion by log processors.
-    Json,
+    Json
 }
 
 impl Default for LogFormat {
@@ -207,7 +209,7 @@ impl Default for LogFormat {
 #[serde(default)]
 pub struct ConfigLoader {
     env_prefix: String,
-    file_path: Option<PathBuf>,
+    file_path:  Option<PathBuf>
 }
 
 impl ConfigLoader {
@@ -225,7 +227,7 @@ impl ConfigLoader {
     pub fn new(prefix: impl Into<String>) -> Self {
         Self {
             env_prefix: prefix.into(),
-            file_path: None,
+            file_path:  None
         }
     }
 
@@ -235,6 +237,7 @@ impl ConfigLoader {
     ///
     /// ```
     /// use std::path::Path;
+    ///
     /// use zalo_types::ConfigLoader;
     ///
     /// let loader = ConfigLoader::new("ZALO_").with_file_path(Path::new("config.toml"));
@@ -278,7 +281,7 @@ impl ConfigLoader {
         if let Some(path) = resolved_path {
             if !path_exists(path) {
                 return Err(ConfigError::MissingFile {
-                    path: path.to_path_buf(),
+                    path: path.to_path_buf()
                 }
                 .into());
             }
@@ -320,11 +323,11 @@ fn env_config_path(prefix: &str) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::fs::write;
-    use std::sync::Mutex;
+    use std::{fs::write, sync::Mutex};
 
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     static ENV_GUARD: Mutex<()> = Mutex::new(());
 
@@ -391,7 +394,7 @@ mod tests {
                 [logging]
                 filter = "warn"
                 format = "text"
-            "#,
+            "#
         )
         .expect("write config");
 
@@ -434,7 +437,7 @@ mod tests {
                 [logging]
                 filter = "trace"
                 format = "json"
-            "#,
+            "#
         )
         .expect("write env config");
 
@@ -447,7 +450,7 @@ mod tests {
                 [logging]
                 filter = "info"
                 format = "text"
-            "#,
+            "#
         )
         .expect("write fallback config");
 

@@ -1,8 +1,7 @@
 use tracing::dispatcher::{self, Dispatch};
 use tracing_subscriber::{
-    fmt,
-    layer::{Layer, SubscriberExt},
-    EnvFilter, Registry,
+    EnvFilter, Registry, fmt,
+    layer::{Layer, SubscriberExt}
 };
 use zalo_types::{AppConfig, LogFormat};
 
@@ -33,13 +32,13 @@ pub fn build_tracing_dispatch(config: &AppConfig) -> Result<Dispatch, Observabil
     let filter = EnvFilter::try_new(filter_expression.clone()).map_err(|source| {
         ObservabilityError::InvalidFilter {
             filter: filter_expression,
-            source,
+            source
         }
     })?;
 
     let fmt_layer = match config.logging().format() {
         LogFormat::Json => fmt::layer().json().boxed(),
-        LogFormat::Text => fmt::layer().boxed(),
+        LogFormat::Text => fmt::layer().boxed()
     };
 
     let subscriber = Registry::default().with(filter).with(fmt_layer);
@@ -82,13 +81,14 @@ pub fn init_tracing(config: &AppConfig) -> BotResult<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use zalo_types::{AppError, AppErrorKind, LoggingConfig};
+
+    use super::*;
 
     #[test]
     fn builds_dispatcher_for_text_logs() {
-        let config = AppConfig::default().with_logging(LoggingConfig::new("info", LogFormat::Text));
+        let config =
+            AppConfig::default().with_logging(LoggingConfig::new("info", LogFormat::Text));
         let dispatch = build_tracing_dispatch(&config).expect("dispatcher");
 
         tracing::dispatcher::with_default(&dispatch, || {
@@ -103,10 +103,12 @@ mod tests {
         let error = build_tracing_dispatch(&config).expect_err("invalid filter");
 
         match error {
-            ObservabilityError::InvalidFilter { filter, .. } => {
+            ObservabilityError::InvalidFilter {
+                filter, ..
+            } => {
                 assert_eq!(filter, "=info");
             }
-            other => panic!("unexpected error: {other:?}"),
+            other => panic!("unexpected error: {other:?}")
         }
     }
 

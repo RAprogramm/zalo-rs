@@ -8,7 +8,7 @@ type HmacSha256 = Hmac<Sha256>;
 /// Verifies webhook signatures sent by the Zalo platform.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WebhookVerifier {
-    secret: Vec<u8>,
+    secret: Vec<u8>
 }
 
 impl WebhookVerifier {
@@ -16,7 +16,8 @@ impl WebhookVerifier {
     ///
     /// # Errors
     ///
-    /// Returns [`SignatureError::InvalidSecretLength`] when the secret is empty.
+    /// Returns [`SignatureError::InvalidSecretLength`] when the secret is
+    /// empty.
     ///
     /// # Examples
     ///
@@ -35,7 +36,7 @@ impl WebhookVerifier {
         HmacSha256::new_from_slice(secret_bytes)?;
 
         Ok(Self {
-            secret: secret_bytes.to_vec(),
+            secret: secret_bytes.to_vec()
         })
     }
 
