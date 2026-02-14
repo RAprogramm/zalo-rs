@@ -91,7 +91,25 @@ pub enum SdkError {
 
     /// Share card title is empty or blank.
     #[error("invalid share title: {0:?}")]
-    InvalidShareTitle(String)
+    InvalidShareTitle(String),
+
+    /// User identifier is empty, blank, or fails validation rules.
+    ///
+    /// This error is returned when constructing a strongly-typed `UserId`
+    /// from an invalid input string.
+    ///
+    /// The contained value is the original user-supplied identifier.
+    #[error("invalid user identifier: {0:?}")]
+    InvalidUserId(String),
+
+    /// Birthday string does not match the expected `dd/mm/yyyy` format
+    /// or represents an invalid calendar date.
+    ///
+    /// This error is returned when parsing a `Birthday` from external input.
+    ///
+    /// The contained value is the original unparsed string.
+    #[error("invalid birthday format: {0:?}")]
+    InvalidBirthday(String)
 }
 
 impl From<SdkError> for AppError {
@@ -115,6 +133,8 @@ impl From<SdkError> for AppError {
             }
             | SdkError::InvalidAmount
             | SdkError::InvalidOrderId(_)
+            | SdkError::InvalidUserId(_)
+            | SdkError::InvalidBirthday(_)
             | SdkError::EmptyDescription
             | SdkError::InvalidRoutePath(_)
             | SdkError::InvalidNavTitle(_)
@@ -154,6 +174,8 @@ mod tests {
             },
             SdkError::InvalidAmount,
             SdkError::InvalidOrderId("".to_owned()),
+            SdkError::InvalidUserId("u1".to_owned()),
+            SdkError::InvalidBirthday("bad".to_owned()),
             SdkError::EmptyDescription,
             SdkError::InvalidRoutePath("home".to_owned()),
             SdkError::InvalidNavTitle("".to_owned()),

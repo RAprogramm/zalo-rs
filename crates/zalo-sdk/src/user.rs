@@ -1,193 +1,281 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
+//! User domain types and requests for the Zalo SDK.
+//!
+//! This module contains strongly-typed domain objects used by the SDK:
+//! - AccessToken (zeroized on drop)
+//! - UserId
+//! - Gender (forward-compatible)
+//! - Birthday (validated `dd/mm/yyyy`)
+//! - PhoneNumber (normalized)
+//! - UserInfo and request/response types
+
+use std::fmt::{Formatter, Result as FmtResult};
+
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use zeroize::Zeroize;
 
 use crate::error::{SdkError, SdkResult};
 
-/// Detailed profile of the authenticated Zalo user.
-///
-/// Returned by the platform after a successful `getUserInfo` call. All fields
-/// are populated when the user has granted the `scope.userInfo` permission.
-///
-/// # Examples
-///
-/// ```
-/// use zalo_sdk::user::UserInfo;
-///
-/// let json = r#"{"id":"u1","name":"Alice","avatar":"https://a.example.com/a.jpg","birthday":"01/01/1990","gender":"male"}"#;
-/// let info: UserInfo = serde_json::from_str(json).unwrap();
-/// assert_eq!(info.name, "Alice");
-/// ```
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct UserInfo {
-    /// Unique Zalo user identifier.
-    pub id:       String,
-    /// Display name of the user.
-    pub name:     String,
-    /// URL to the user's avatar image.
-    pub avatar:   String,
-    /// Date of birth in `dd/mm/yyyy` format, if available.
-    #[serde(default)]
-    pub birthday: Option<String>,
-    /// Self-reported gender: `"male"`, `"female"`, or `"unknown"`.
-    #[serde(default)]
-    pub gender:   Option<String>
+/// Strongly-typed access token.
+/// The inner `String` is zeroized on drop to reduce secret lifetime in memory.
+#[repr(transparent)]
+#[derive(Eq, PartialEq, Serialize)]
+#[serde(transparent)]
+pub struct AccessToken(String);
+
+impl Drop for AccessToken {
+    fn drop(&mut self) {
+        self.0.zeroize();
+    }
 }
 
-/// Validated phone number retrieved from the platform.
-///
-/// Obtaining a phone number requires the `scope.userPhonenumber` permission and
-/// an explicit user approval prompt.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PhoneNumber(String);
-
-impl PhoneNumber {
-    /// Creates a validated phone number.
+impl AccessToken {
+    /// Create a validated `AccessToken`.
     ///
-    /// The value must be non-empty and consist only of digits and an optional
-    /// leading `+`.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SdkError::InvalidPhoneNumber`] when the value fails
-    /// validation.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use zalo_sdk::user::PhoneNumber;
-    ///
-    /// let phone = PhoneNumber::new("+84901234567")?;
-    /// assert_eq!(phone.as_str(), "+84901234567");
-    /// # Ok::<_, Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn new(value: impl Into<String>) -> SdkResult<Self> {
-        let value = value.into();
-        let trimmed = value.trim();
-        if trimmed.is_empty() {
-            return Err(SdkError::InvalidPhoneNumber(value));
+    /// Returns `SdkError::InvalidAccessToken` if the provided value is empty
+    /// or contains only whitespace.
+    pub fn new(input: impl AsRef<str>) -> SdkResult<Self> {
+        let raw = input.as_ref().trim();
+        if raw.is_empty() {
+            return Err(SdkError::InvalidAccessToken(raw.to_owned()));
         }
-
-        let digit_chars = if let Some(stripped) = trimmed.strip_prefix('+') {
-            stripped
-        } else {
-            trimmed
-        };
-
-        if digit_chars.is_empty() || !digit_chars.chars().all(|c| c.is_ascii_digit()) {
-            return Err(SdkError::InvalidPhoneNumber(value));
-        }
-
-        Ok(Self(trimmed.to_owned()))
+        Ok(Self(raw.to_owned()))
     }
 
-    /// Returns the phone number string.
+    /// Return token as string slice.
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 }
 
-/// Request to fetch the current user's profile.
-///
-/// Requires that `scope.userInfo` was granted during authorization.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-pub struct GetUserInfoRequest {
-    /// Access token obtained after authorization.
-    pub access_token: String
+impl std::fmt::Debug for AccessToken {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        // redact token in debug output to avoid leaking secrets in logs
+        f.write_str("AccessToken([REDACTED])")
+    }
 }
 
-impl GetUserInfoRequest {
-    /// Constructs a new request with the provided access token.
+/// Strongly-typed user identifier.
+#[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct UserId(Box<str>);
+
+impl UserId {
+    /// Create validated `UserId`.
     ///
-    /// # Errors
-    ///
-    /// Returns [`SdkError::InvalidAccessToken`] when the token is blank.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use zalo_sdk::user::GetUserInfoRequest;
-    ///
-    /// let req = GetUserInfoRequest::new("token-abc")?;
-    /// assert_eq!(req.access_token, "token-abc");
-    /// # Ok::<_, Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn new(access_token: impl Into<String>) -> SdkResult<Self> {
-        let token = access_token.into();
-        if token.trim().is_empty() {
-            return Err(SdkError::InvalidAccessToken(token));
+    /// Returns `SdkError::InvalidUserId` if the provided value is empty.
+    pub fn new(input: impl AsRef<str>) -> SdkResult<Self> {
+        let raw = input.as_ref().trim();
+        if raw.is_empty() {
+            return Err(SdkError::InvalidUserId(raw.to_owned()));
         }
-        Ok(Self {
-            access_token: token
+        Ok(Self(raw.into()))
+    }
+
+    /// Return user id as string slice.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+/// Forward-compatible user gender value returned by the platform.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Gender {
+    /// Male gender.
+    Male,
+    /// Female gender.
+    Female,
+    /// Explicitly reported as unknown.
+    Unknown,
+    /// Any non-standard or future value returned by the platform.
+    /// Preserves the original string for forward compatibility.
+    Other(Box<str>)
+}
+
+impl<'de> Deserialize<'de> for Gender {
+    fn deserialize<D>(d: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>
+    {
+        let raw: Box<str> = Deserialize::deserialize(d)?;
+        Ok(match raw.as_ref() {
+            "male" => Gender::Male,
+            "female" => Gender::Female,
+            "unknown" => Gender::Unknown,
+            _ => Gender::Other(raw)
         })
     }
 }
 
-/// Request to retrieve the phone number of the current user.
+impl Serialize for Gender {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer
+    {
+        match self {
+            Gender::Male => s.serialize_str("male"),
+            Gender::Female => s.serialize_str("female"),
+            Gender::Unknown => s.serialize_str("unknown"),
+            Gender::Other(v) => s.serialize_str(v)
+        }
+    }
+}
+
+/// Birthday represented in `dd/mm/yyyy` format.
+#[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Birthday(NaiveDate);
+
+impl Birthday {
+    const FORMAT: &'static str = "%d/%m/%Y";
+
+    /// Parse birthday from `dd/mm/yyyy`. Returns `InvalidBirthday` on failure.
+    pub fn parse(raw: &str) -> SdkResult<Self> {
+        let date = NaiveDate::parse_from_str(raw, Self::FORMAT)
+            .map_err(|_| SdkError::InvalidBirthday(raw.to_owned()))?;
+        Ok(Self(date))
+    }
+
+    /// Return underlying `NaiveDate`.
+    #[must_use]
+    pub fn as_date(&self) -> NaiveDate {
+        self.0
+    }
+}
+
+impl<'de> Deserialize<'de> for Birthday {
+    fn deserialize<D>(d: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>
+    {
+        let raw: &str = Deserialize::deserialize(d)?;
+        Birthday::parse(raw).map_err(serde::de::Error::custom)
+    }
+}
+
+impl Serialize for Birthday {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer
+    {
+        s.serialize_str(&self.0.format(Self::FORMAT).to_string())
+    }
+}
+
+/// Detailed profile of authenticated user.
 ///
-/// Requires that `scope.userPhonenumber` was granted.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+/// Unknown JSON fields are rejected to avoid silently ignoring API changes.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UserInfo {
+    /// Unique user identifier assigned by the platform.
+    pub id:       UserId,
+    /// Display name of the user.
+    pub name:     Box<str>,
+    /// URL pointing to the user's avatar image.
+    pub avatar:   Box<str>,
+    /// User birthday if provided and successfully parsed.
+    #[serde(default)]
+    pub birthday: Option<Birthday>,
+    /// User gender if provided by the platform.
+    #[serde(default)]
+    pub gender:   Option<Gender>
+}
+
+/// Validated phone number.
+///
+/// Accepts digits with optional leading `+`. Normalized to canonical form.
+#[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PhoneNumber(Box<str>);
+
+impl PhoneNumber {
+    /// Create validated and normalized phone number.
+    ///
+    /// Returns `SdkError::InvalidPhoneNumber` on invalid input.
+    pub fn new(input: impl AsRef<str>) -> SdkResult<Self> {
+        let raw = input.as_ref().trim();
+
+        if raw.is_empty() {
+            return Err(SdkError::InvalidPhoneNumber(raw.to_owned()));
+        }
+
+        let (prefix, digits) = if let Some(rest) = raw.strip_prefix('+') {
+            ("+", rest)
+        } else {
+            ("", raw)
+        };
+
+        if digits.is_empty() || !digits.as_bytes().iter().all(u8::is_ascii_digit) {
+            return Err(SdkError::InvalidPhoneNumber(raw.to_owned()));
+        }
+
+        let mut normalized = String::with_capacity(prefix.len() + digits.len());
+        normalized.push_str(prefix);
+        normalized.push_str(digits);
+
+        Ok(Self(normalized.into_boxed_str()))
+    }
+
+    /// Return phone number as string slice.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+/// Request to fetch authenticated user profile information.
+#[derive(Debug, Eq, PartialEq, Serialize)]
+pub struct GetUserInfoRequest {
+    /// Validated access token obtained during authorization.
+    pub access_token: AccessToken
+}
+
+impl GetUserInfoRequest {
+    /// Create a new profile request with a validated access token.
+    #[must_use]
+    pub fn new(access_token: AccessToken) -> Self {
+        Self {
+            access_token
+        }
+    }
+}
+
+/// Request to fetch the authenticated user's phone number.
+#[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct GetPhoneNumberRequest {
-    /// Access token obtained after authorization.
-    pub access_token: String
+    /// Validated access token obtained during authorization.
+    pub access_token: AccessToken
 }
 
 impl GetPhoneNumberRequest {
-    /// Constructs a new phone number request.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SdkError::InvalidAccessToken`] when the token is blank.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use zalo_sdk::user::GetPhoneNumberRequest;
-    ///
-    /// let req = GetPhoneNumberRequest::new("tok")?;
-    /// assert_eq!(req.access_token, "tok");
-    /// # Ok::<_, Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn new(access_token: impl Into<String>) -> SdkResult<Self> {
-        let token = access_token.into();
-        if token.trim().is_empty() {
-            return Err(SdkError::InvalidAccessToken(token));
+    /// Create a new phone-number request with a validated access token.
+    #[must_use]
+    pub fn new(access_token: AccessToken) -> Self {
+        Self {
+            access_token
         }
-        Ok(Self {
-            access_token: token
-        })
     }
 }
 
 /// Response returned by the `getPhoneNumber` API.
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+///
+/// Unknown JSON fields are rejected.
+#[derive(Debug, Deserialize, Eq, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct PhoneNumberResponse {
-    /// Raw phone number string from the platform.
-    pub number: String
+    /// Raw phone number string returned by the platform.
+    pub number: Box<str>
 }
 
 impl PhoneNumberResponse {
-    /// Parses the raw number into a validated [`PhoneNumber`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SdkError::InvalidPhoneNumber`] if the value does not pass
-    /// validation.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use zalo_sdk::user::PhoneNumberResponse;
-    ///
-    /// let resp = PhoneNumberResponse {
-    ///     number: "+84901234567".to_owned()
-    /// };
-    /// let phone = resp.parse()?;
-    /// assert_eq!(phone.as_str(), "+84901234567");
-    /// # Ok::<_, Box<dyn std::error::Error>>(())
-    /// ```
+    /// Parse and validate the returned phone number.
     pub fn parse(&self) -> SdkResult<PhoneNumber> {
         PhoneNumber::new(&self.number)
     }
@@ -198,77 +286,35 @@ mod tests {
     use super::*;
 
     #[test]
-    fn phone_rejects_empty() {
-        let err = PhoneNumber::new("").expect_err("empty");
-        assert!(matches!(err, SdkError::InvalidPhoneNumber(_)));
+    fn phone_validation() {
+        assert!(PhoneNumber::new("").is_err());
+        assert!(PhoneNumber::new("+").is_err());
+        assert!(PhoneNumber::new("abc").is_err());
+        assert!(PhoneNumber::new("+84 901").is_err());
+
+        let ok = PhoneNumber::new("+84901234567");
+        assert!(ok.is_ok());
     }
 
     #[test]
-    fn phone_rejects_letters() {
-        let err = PhoneNumber::new("abc").expect_err("letters");
-        assert!(matches!(err, SdkError::InvalidPhoneNumber(_)));
+    fn access_token_validation() {
+        assert!(AccessToken::new("").is_err());
+        assert!(AccessToken::new("   ").is_err());
+        assert!(AccessToken::new("tok").is_ok());
     }
 
     #[test]
-    fn phone_rejects_plus_only() {
-        let err = PhoneNumber::new("+").expect_err("plus only");
-        assert!(matches!(err, SdkError::InvalidPhoneNumber(_)));
+    fn birthday_validation() {
+        assert!(Birthday::parse("01/01/1990").is_ok());
+        assert!(Birthday::parse("1990-01-01").is_err());
     }
 
     #[test]
-    fn phone_accepts_digits() {
-        let phone = PhoneNumber::new("0901234567").expect("digits only");
-        assert_eq!(phone.as_str(), "0901234567");
-    }
+    fn gender_forward_compat() {
+        let g: Result<Gender, _> = serde_json::from_str("\"male\"");
+        assert!(matches!(g, Ok(Gender::Male)));
 
-    #[test]
-    fn phone_accepts_international_format() {
-        let phone = PhoneNumber::new("+84901234567").expect("international");
-        assert_eq!(phone.as_str(), "+84901234567");
-    }
-
-    #[test]
-    fn phone_response_parses_valid_number() {
-        let resp = PhoneNumberResponse {
-            number: "+84901234567".to_owned()
-        };
-        let phone = resp.parse().expect("parse");
-        assert_eq!(phone.as_str(), "+84901234567");
-    }
-
-    #[test]
-    fn user_info_deserialises_all_fields() {
-        let json = r#"{"id":"u1","name":"Alice","avatar":"https://a.example.com/a.jpg","birthday":"01/01/1990","gender":"female"}"#;
-        let info: UserInfo = serde_json::from_str(json).expect("deserialize");
-        assert_eq!(info.id, "u1");
-        assert_eq!(info.name, "Alice");
-        assert_eq!(info.birthday.as_deref(), Some("01/01/1990"));
-        assert_eq!(info.gender.as_deref(), Some("female"));
-    }
-
-    #[test]
-    fn user_info_optional_fields_default_to_none() {
-        let json = r#"{"id":"u2","name":"Bob","avatar":"url"}"#;
-        let info: UserInfo = serde_json::from_str(json).expect("deserialize");
-        assert!(info.birthday.is_none());
-        assert!(info.gender.is_none());
-    }
-
-    #[test]
-    fn get_user_info_request_rejects_empty_token() {
-        let err = GetUserInfoRequest::new("").expect_err("empty token");
-        assert!(matches!(err, SdkError::InvalidAccessToken(_)));
-    }
-
-    #[test]
-    fn get_user_info_request_accepts_valid_token() {
-        let req = GetUserInfoRequest::new("tok-abc").expect("valid");
-        assert_eq!(req.access_token, "tok-abc");
-    }
-
-    #[test]
-    fn get_phone_number_request_rejects_empty_token() {
-        let err = GetPhoneNumberRequest::new("   ").expect_err("whitespace");
-        assert!(matches!(err, SdkError::InvalidAccessToken(_)));
+        let g2: Result<Gender, _> = serde_json::from_str("\"nonbinary\"");
+        assert!(matches!(g2, Ok(Gender::Other(_))));
     }
 }

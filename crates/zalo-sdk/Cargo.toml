@@ -9,6 +9,8 @@ license.workspace = true
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 masterror.workspace = true
+chrono = { version = "0.4", default-features = false, features = ["alloc"] }
+zeroize = "1"
 zalo-types = { path = "../zalo-types" }
 
 [dev-dependencies]
