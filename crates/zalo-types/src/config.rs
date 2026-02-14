@@ -188,19 +188,14 @@ impl Default for LoggingConfig {
 /// let logging = LoggingConfig::new("info", LogFormat::Json);
 /// assert_eq!(matches!(logging.format(), LogFormat::Json), true);
 /// ```
-#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Default, Copy, Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LogFormat {
     /// Plain-text logs optimised for human consumption.
+    #[default]
     Text,
     /// Structured JSON logs suitable for ingestion by log processors.
     Json
-}
-
-impl Default for LogFormat {
-    fn default() -> Self {
-        Self::Text
-    }
 }
 
 /// Loads configuration from environment variables and optional TOML files.
