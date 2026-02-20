@@ -3,7 +3,7 @@
 
 //! Navigation types.
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::error::SdkResult;
 

@@ -7,9 +7,11 @@ use std::time::Duration;
 
 use reqwest::{Client as ReqwestClient, Url};
 use tracing::debug;
+use zalo_types::message::MessageType;
+use zalo_types::{SendMessageResponse, SendImageRequest, SendTextRequest};
 
 use crate::error::{HttpError, HttpResult};
-use crate::types::{FollowerList, FollowerListQuery, UserProfile};
+use zalo_types::user::{FollowerList, FollowerListQuery, UserProfile};
 
 use super::AuthenticatedRequest;
 
@@ -46,7 +48,7 @@ impl OaClient {
         user_id: impl Into<String>,
         text: impl Into<String>,
     ) -> HttpResult<String> {
-        self.send_typed_text_message(user_id, text, crate::types::MessageType::Cs)
+        self.send_typed_text_message(user_id, text, MessageType::Cs)
             .await
     }
 
@@ -55,14 +57,44 @@ impl OaClient {
         &self,
         user_id: impl Into<String>,
         text: impl Into<String>,
-        message_type: crate::types::MessageType,
+        message_type: MessageType,
     ) -> HttpResult<String> {
         let url = self.endpoint("message/cs")?;
-        let body = crate::types::SendTextRequest::new(user_id, text, message_type);
+        let body = SendTextRequest::new(user_id, text, message_type);
 
         debug!(endpoint = %url, "sending text message");
 
-        let response: crate::types::SendMessageResponse =
+        let response: SendMessageResponse =
+            self.post(url).json(&body).send_and_parse().await?;
+
+        Ok(response.message_id)
+    }
+
+    /// Sends image message.
+    pub async fn send_image_message(
+        &self,
+        user_id: impl Into<String>,
+        image_url: impl Into<String>,
+        caption: Option<String>,
+    ) -> HttpResult<String> {
+        self.send_typed_image_message(user_id, image_url, caption, MessageType::Cs)
+            .await
+    }
+
+    /// Sends typed image message.
+    pub async fn send_typed_image_message(
+        &self,
+        user_id: impl Into<String>,
+        image_url: impl Into<String>,
+        caption: Option<String>,
+        message_type: MessageType,
+    ) -> HttpResult<String> {
+        let url = self.endpoint("message/cs")?;
+        let body = SendImageRequest::new(user_id, image_url, caption, message_type);
+
+        debug!(endpoint = %url, "sending image message");
+
+        let response: SendMessageResponse =
             self.post(url).json(&body).send_and_parse().await?;
 
         Ok(response.message_id)

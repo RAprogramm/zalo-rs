@@ -3,12 +3,12 @@
 
 //! Internal request helper.
 
-use reqwest::{RequestBuilder, Url};
+use reqwest::RequestBuilder;
 use serde::de::DeserializeOwned;
 use tracing::warn;
 
 use crate::error::{HttpError, HttpResult};
-use crate::types::ApiResponse;
+use zalo_types::ApiResponse;
 
 /// Authenticated request builder.
 pub struct AuthenticatedRequest {
@@ -42,12 +42,13 @@ impl AuthenticatedRequest {
         let envelope: ApiResponse<T> = serde_json::from_str(&body).map_err(HttpError::from)?;
 
         if !envelope.is_ok() {
+            let message = envelope.message.unwrap_or_else(|| "unknown error".to_string());
             warn!(
                 code = envelope.error,
-                message = %envelope.message,
+                %message,
                 "Zalo API returned non-zero error code"
             );
-            return Err(HttpError::from_api_response(envelope.error, envelope.message));
+            return Err(HttpError::from_api_response(envelope.error, message));
         }
 
         envelope.data.ok_or_else(|| HttpError::Api {

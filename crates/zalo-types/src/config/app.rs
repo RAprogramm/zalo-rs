@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::types::{Environment, LogFormat, LoggingConfig};
+use super::types::{Environment, LoggingConfig};
 
 /// Application configuration.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]

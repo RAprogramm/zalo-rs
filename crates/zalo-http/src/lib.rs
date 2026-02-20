@@ -45,3 +45,7 @@ pub use error::{HttpError, HttpResult};
 pub use oauth::OAuthClient;
 pub use oauth_types::OAuthTokenResponse;
 pub use rate_limiter::RateLimiter;
+pub use types::image::{ImageAttachment, ImagePayload, SendImageRequest};
+pub use types::message::{MessageType, Recipient, SendTextRequest, TextPayload};
+pub use types::response::ApiResponse;
+pub use types::user::{FollowerList, FollowerListQuery, UserProfile};
