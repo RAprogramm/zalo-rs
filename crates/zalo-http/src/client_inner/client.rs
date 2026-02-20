@@ -5,27 +5,31 @@
 
 use std::time::Duration;
 
-use reqwest::{Client as ReqwestClient, Url};
-use tracing::debug;
+use reqwest::Client as ReqwestClient;
 use zalo_types::message::MessageType;
-use zalo_types::{SendMessageResponse, SendFileRequest, SendImageRequest, SendTemplateRequest, SendTextRequest};
+use zalo_types::user::{FollowerList, FollowerListQuery, OaInfo, UpdateFollowerRequest, UserProfile};
 use zalo_types::tag::{TagFollowerRequest, TagList, TagListQuery, TagOperationResponse};
 use zalo_types::conversation::{ConversationHistory, ConversationQuery, RecentChatList, RecentChatQuery};
-use zalo_types::store::{CreateOrderRequest, CreateProductRequest, OrderList, OrderListQuery, StoreOrder, StoreProduct};
+use zalo_types::store::{CreateOrderRequest, CreateProductRequest, OrderList, OrderListQuery, StoreOrder, StoreProduct, OrderStatus};
 use zalo_types::article::{ArticleVerification, ArticleVerificationQuery, CreateArticleRequest, VideoUploadPrepareRequest, VideoUploadPrepareResponse, VideoUploadVerifyRequest};
 
 use crate::error::{HttpError, HttpResult};
-use zalo_types::user::{FollowerList, FollowerListQuery, OaInfo, UpdateFollowerRequest, UserProfile};
 
-use super::AuthenticatedRequest;
+use super::{send_text_message, send_typed_text_message, send_image_message, send_typed_image_message};
+use super::{send_file_message, send_typed_file_message, send_template_message, send_template_message_with_elements};
+use super::{get_user_profile, list_followers, get_oa_info, update_follower_info};
+use super::{get_tags, tag_followers, untag_followers};
+use super::{list_recent_chats, get_conversation};
+use super::{create_product, update_product, get_product, list_products};
+use super::{create_order, update_order, get_order, list_orders};
+use super::{create_article, verify_article, upload_video_prepare, upload_video_verify};
 
-const BASE_URL: &str = "https://openapi.zalo.me/v3.0/oa/";
 const REQUEST_TIMEOUT_SECS: u64 = 15;
-const ACCESS_TOKEN_HEADER: &str = "access_token";
 
 /// Zalo OA HTTP client.
 #[derive(Debug)]
 pub struct OaClient {
+    #[allow(dead_code)]
     inner: ReqwestClient,
     token: String,
 }
@@ -46,14 +50,15 @@ impl OaClient {
         Ok(Self { inner, token })
     }
 
+    // ==================== Messaging ====================
+
     /// Sends text message.
     pub async fn send_text_message(
         &self,
         user_id: impl Into<String>,
         text: impl Into<String>,
     ) -> HttpResult<String> {
-        self.send_typed_text_message(user_id, text, MessageType::Cs)
-            .await
+        send_text_message(&self.token, user_id, text).await
     }
 
     /// Sends typed text message.
@@ -63,15 +68,7 @@ impl OaClient {
         text: impl Into<String>,
         message_type: MessageType,
     ) -> HttpResult<String> {
-        let url = self.endpoint("message/cs")?;
-        let body = SendTextRequest::new(user_id, text, message_type);
-
-        debug!(endpoint = %url, "sending text message");
-
-        let response: SendMessageResponse =
-            self.post(url).json(&body).send_and_parse().await?;
-
-        Ok(response.message_id)
+        send_typed_text_message(&self.token, user_id, text, message_type).await
     }
 
     /// Sends image message.
@@ -81,8 +78,7 @@ impl OaClient {
         image_url: impl Into<String>,
         caption: Option<String>,
     ) -> HttpResult<String> {
-        self.send_typed_image_message(user_id, image_url, caption, MessageType::Cs)
-            .await
+        send_image_message(&self.token, user_id, image_url, caption).await
     }
 
     /// Sends typed image message.
@@ -93,15 +89,7 @@ impl OaClient {
         caption: Option<String>,
         message_type: MessageType,
     ) -> HttpResult<String> {
-        let url = self.endpoint("message/cs")?;
-        let body = SendImageRequest::new(user_id, image_url, caption, message_type);
-
-        debug!(endpoint = %url, "sending image message");
-
-        let response: SendMessageResponse =
-            self.post(url).json(&body).send_and_parse().await?;
-
-        Ok(response.message_id)
+        send_typed_image_message(&self.token, user_id, image_url, caption, message_type).await
     }
 
     /// Sends file message.
@@ -111,8 +99,7 @@ impl OaClient {
         file_url: impl Into<String>,
         filename: impl Into<String>,
     ) -> HttpResult<String> {
-        self.send_typed_file_message(user_id, file_url, filename, MessageType::Cs)
-            .await
+        send_file_message(&self.token, user_id, file_url, filename).await
     }
 
     /// Sends typed file message.
@@ -123,15 +110,7 @@ impl OaClient {
         filename: impl Into<String>,
         message_type: MessageType,
     ) -> HttpResult<String> {
-        let url = self.endpoint("message/cs")?;
-        let body = SendFileRequest::new(user_id, file_url, filename, message_type);
-
-        debug!(endpoint = %url, "sending file message");
-
-        let response: SendMessageResponse =
-            self.post(url).json(&body).send_and_parse().await?;
-
-        Ok(response.message_id)
+        send_typed_file_message(&self.token, user_id, file_url, filename, message_type).await
     }
 
     /// Sends template message.
@@ -141,15 +120,7 @@ impl OaClient {
         template_type: impl Into<String>,
         message_type: MessageType,
     ) -> HttpResult<String> {
-        let url = self.endpoint("message/cs")?;
-        let body = SendTemplateRequest::new(user_id, template_type, message_type);
-
-        debug!(endpoint = %url, "sending template message");
-
-        let response: SendMessageResponse =
-            self.post(url).json(&body).send_and_parse().await?;
-
-        Ok(response.message_id)
+        send_template_message(&self.token, user_id, template_type, message_type).await
     }
 
     /// Sends template message with elements.
@@ -160,460 +131,121 @@ impl OaClient {
         message_type: MessageType,
         elements: Vec<zalo_types::TemplateElement>,
     ) -> HttpResult<String> {
-        let url = self.endpoint("message/cs")?;
-        let body = SendTemplateRequest::new(user_id, template_type, message_type)
-            .with_elements(elements);
-
-        debug!(endpoint = %url, "sending template message with elements");
-
-        let response: SendMessageResponse =
-            self.post(url).json(&body).send_and_parse().await?;
-
-        Ok(response.message_id)
+        send_template_message_with_elements(&self.token, user_id, template_type, message_type, elements).await
     }
+
+    // ==================== Users ====================
 
     /// Gets user profile.
     pub async fn get_user_profile(&self, user_id: impl AsRef<str>) -> HttpResult<UserProfile> {
-        let url = self.endpoint("user/detail")?;
-
-        debug!(endpoint = %url, user_id = user_id.as_ref(), "fetching user profile");
-
-        let profile: UserProfile = self
-            .get(url)
-            .query(&[("user_id", user_id.as_ref())])
-            .send_and_parse()
-            .await?;
-
-        Ok(profile)
+        get_user_profile(&self.token, user_id).await
     }
 
     /// Lists followers.
     pub async fn list_followers(&self, query: FollowerListQuery) -> HttpResult<FollowerList> {
-        let url = self.endpoint("user/getlist")?;
-
-        debug!(
-            endpoint = %url,
-            offset = query.offset,
-            count = query.count,
-            "listing followers"
-        );
-
-        let list: FollowerList = self.get(url).query(&query).send_and_parse().await?;
-
-        Ok(list)
+        list_followers(&self.token, query).await
     }
 
     /// Gets OA information.
     pub async fn get_oa_info(&self) -> HttpResult<OaInfo> {
-        let url = self.endpoint("getoa")?;
-
-        debug!(
-            endpoint = %url,
-            "fetching OA information"
-        );
-
-        let response: OaInfo =
-            self.get(url).send_and_parse().await?;
-
-        Ok(response)
+        get_oa_info(&self.token).await
     }
 
     /// Updates follower information.
-    pub async fn update_follower_info(
-        &self,
-        request: UpdateFollowerRequest,
-    ) -> HttpResult<UserProfile> {
-        let url = self.endpoint("user/update")?;
-
-        debug!(
-            endpoint = %url,
-            user_id = %request.user_id,
-            "updating follower info"
-        );
-
-        let response: UserProfile =
-            self.post(url).json(&request).send_and_parse().await?;
-
-        Ok(response)
+    pub async fn update_follower_info(&self, request: UpdateFollowerRequest) -> HttpResult<UserProfile> {
+        update_follower_info(&self.token, request).await
     }
+
+    // ==================== Tags ====================
 
     /// Lists tags.
     pub async fn get_tags(&self, query: TagListQuery) -> HttpResult<TagList> {
-        let url = self.endpoint("tag/gettagsofoa")?;
-
-        debug!(
-            endpoint = %url,
-            page = ?query.page,
-            page_size = ?query.page_size,
-            "listing tags"
-        );
-
-        let list: TagList = self.get(url).query(&query).send_and_parse().await?;
-
-        Ok(list)
+        get_tags(&self.token, query).await
     }
 
     /// Tags followers.
     pub async fn tag_followers(&self, request: TagFollowerRequest) -> HttpResult<TagOperationResponse> {
-        let url = self.endpoint("tag/tagfollower")?;
-
-        debug!(
-            endpoint = %url,
-            tag_id = %request.tag_id,
-            count = request.uids.len(),
-            "tagging followers"
-        );
-
-        let response: TagOperationResponse =
-            self.post(url).json(&request).send_and_parse().await?;
-
-        Ok(response)
+        tag_followers(&self.token, request).await
     }
 
     /// Removes tag from followers.
     pub async fn untag_followers(&self, request: TagFollowerRequest) -> HttpResult<TagOperationResponse> {
-        let url = self.endpoint("tag/rmfollowerfromtag")?;
-
-        debug!(
-            endpoint = %url,
-            tag_id = %request.tag_id,
-            count = request.uids.len(),
-            "removing tag from followers"
-        );
-
-        let response: TagOperationResponse =
-            self.post(url).json(&request).send_and_parse().await?;
-
-        Ok(response)
+        untag_followers(&self.token, request).await
     }
+
+    // ==================== Conversations ====================
 
     /// Lists recent chats.
     pub async fn list_recent_chats(&self, query: RecentChatQuery) -> HttpResult<RecentChatList> {
-        let url = self.endpoint("user/listrecentchat")?;
-
-        debug!(
-            endpoint = %url,
-            offset = ?query.offset,
-            count = ?query.count,
-            "listing recent chats"
-        );
-
-        let list: RecentChatList = self.get(url).query(&query).send_and_parse().await?;
-
-        Ok(list)
+        list_recent_chats(&self.token, query).await
     }
 
     /// Gets conversation history.
-    pub async fn get_conversation(
-        &self,
-        query: ConversationQuery,
-    ) -> HttpResult<ConversationHistory> {
-        let url = self.endpoint("user/conversation")?;
-
-        debug!(
-            endpoint = %url,
-            user_id = %query.user_id,
-            offset = ?query.offset,
-            count = ?query.count,
-            "fetching conversation"
-        );
-
-        let history: ConversationHistory =
-            self.get(url).query(&query).send_and_parse().await?;
-
-        Ok(history)
+    pub async fn get_conversation(&self, query: ConversationQuery) -> HttpResult<ConversationHistory> {
+        get_conversation(&self.token, query).await
     }
 
-    // ==================== Store API ====================
+    // ==================== Store ====================
 
     /// Creates a product.
-    pub async fn create_product(
-        &self,
-        request: CreateProductRequest,
-    ) -> HttpResult<StoreProduct> {
-        let url = self.endpoint("store/product/create")?;
-
-        debug!(
-            endpoint = %url,
-            name = %request.name,
-            code = %request.code,
-            "creating product"
-        );
-
-        let response: StoreProduct =
-            self.post(url).json(&request).send_and_parse().await?;
-
-        Ok(response)
+    pub async fn create_product(&self, request: CreateProductRequest) -> HttpResult<StoreProduct> {
+        create_product(&self.token, request).await
     }
 
     /// Updates a product.
-    pub async fn update_product(
-        &self,
-        product_id: impl Into<String>,
-        request: CreateProductRequest,
-    ) -> HttpResult<StoreProduct> {
-        let url = self.endpoint("store/product/update")?;
-
-        debug!(
-            endpoint = %url,
-            product_id = %product_id.into(),
-            "updating product"
-        );
-
-        let response: StoreProduct =
-            self.post(url).json(&request).send_and_parse().await?;
-
-        Ok(response)
+    pub async fn update_product(&self, product_id: impl Into<String>, request: CreateProductRequest) -> HttpResult<StoreProduct> {
+        update_product(&self.token, product_id, request).await
     }
 
     /// Gets a product by ID.
-    pub async fn get_product(
-        &self,
-        product_id: impl AsRef<str>,
-    ) -> HttpResult<StoreProduct> {
-        let url = self.endpoint("store/product/detail")?;
-
-        debug!(
-            endpoint = %url,
-            product_id = product_id.as_ref(),
-            "fetching product"
-        );
-
-        let response: StoreProduct = self
-            .get(url)
-            .query(&[("product_id", product_id.as_ref())])
-            .send_and_parse()
-            .await?;
-
-        Ok(response)
+    pub async fn get_product(&self, product_id: impl AsRef<str>) -> HttpResult<StoreProduct> {
+        get_product(&self.token, product_id).await
     }
 
     /// Lists products.
-    pub async fn list_products(
-        &self,
-        offset: Option<u64>,
-        count: Option<u64>,
-    ) -> HttpResult<Vec<StoreProduct>> {
-        let url = self.endpoint("store/product/list")?;
-
-        debug!(
-            endpoint = %url,
-            offset = ?offset,
-            count = ?count,
-            "listing products"
-        );
-
-        let mut query = Vec::new();
-        if let Some(o) = offset {
-            query.push(("offset", o.to_string()));
-        }
-        if let Some(c) = count {
-            query.push(("count", c.to_string()));
-        }
-
-        let response: Vec<StoreProduct> =
-            self.get(url).query(&query).send_and_parse().await?;
-
-        Ok(response)
+    pub async fn list_products(&self, offset: Option<u64>, count: Option<u64>) -> HttpResult<Vec<StoreProduct>> {
+        list_products(&self.token, offset, count).await
     }
 
     /// Creates an order.
-    pub async fn create_order(
-        &self,
-        request: CreateOrderRequest,
-    ) -> HttpResult<StoreOrder> {
-        let url = self.endpoint("store/order/create")?;
-
-        debug!(
-            endpoint = %url,
-            user_id = %request.user_id,
-            "creating order"
-        );
-
-        let response: StoreOrder =
-            self.post(url).json(&request).send_and_parse().await?;
-
-        Ok(response)
+    pub async fn create_order(&self, request: CreateOrderRequest) -> HttpResult<StoreOrder> {
+        create_order(&self.token, request).await
     }
 
     /// Updates an order.
-    pub async fn update_order(
-        &self,
-        order_id: impl Into<String>,
-        status: zalo_types::store::OrderStatus,
-        reason: Option<String>,
-    ) -> HttpResult<StoreOrder> {
-        let url = self.endpoint("store/order/update")?;
-
-        let order_id_str = order_id.into();
-
-        debug!(
-            endpoint = %url,
-            order_id = %order_id_str,
-            status = ?status,
-            "updating order"
-        );
-
-        #[derive(serde::Serialize)]
-        struct UpdateOrderBody {
-            order_id: String,
-            status: zalo_types::store::OrderStatus,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            reason: Option<String>,
-        }
-
-        let body = UpdateOrderBody {
-            order_id: order_id_str,
-            status,
-            reason,
-        };
-
-        let response: StoreOrder =
-            self.post(url).json(&body).send_and_parse().await?;
-
-        Ok(response)
+    pub async fn update_order(&self, order_id: impl Into<String>, status: OrderStatus, reason: Option<String>) -> HttpResult<StoreOrder> {
+        update_order(&self.token, order_id, status, reason).await
     }
 
     /// Gets an order by ID.
-    pub async fn get_order(
-        &self,
-        order_id: impl AsRef<str>,
-    ) -> HttpResult<StoreOrder> {
-        let url = self.endpoint("store/order/detail")?;
-
-        debug!(
-            endpoint = %url,
-            order_id = order_id.as_ref(),
-            "fetching order"
-        );
-
-        let response: StoreOrder = self
-            .get(url)
-            .query(&[("order_id", order_id.as_ref())])
-            .send_and_parse()
-            .await?;
-
-        Ok(response)
+    pub async fn get_order(&self, order_id: impl AsRef<str>) -> HttpResult<StoreOrder> {
+        get_order(&self.token, order_id).await
     }
 
     /// Lists orders.
-    pub async fn list_orders(
-        &self,
-        query: OrderListQuery,
-    ) -> HttpResult<OrderList> {
-        let url = self.endpoint("store/order/list")?;
-
-        debug!(
-            endpoint = %url,
-            offset = ?query.offset,
-            count = ?query.count,
-            status = ?query.status,
-            "listing orders"
-        );
-
-        let response: OrderList =
-            self.get(url).query(&query).send_and_parse().await?;
-
-        Ok(response)
+    pub async fn list_orders(&self, query: OrderListQuery) -> HttpResult<OrderList> {
+        list_orders(&self.token, query).await
     }
 
-    // ==================== Article API ====================
+    // ==================== Articles ====================
 
     /// Creates an article.
-    pub async fn create_article(
-        &self,
-        request: CreateArticleRequest,
-    ) -> HttpResult<ArticleVerification> {
-        let url = self.endpoint("article/create")?;
-
-        debug!(
-            endpoint = %url,
-            title = %request.title,
-            "creating article"
-        );
-
-        let response: ArticleVerification =
-            self.post(url).json(&request).send_and_parse().await?;
-
-        Ok(response)
+    pub async fn create_article(&self, request: CreateArticleRequest) -> HttpResult<ArticleVerification> {
+        create_article(&self.token, request).await
     }
 
     /// Verifies an article.
-    pub async fn verify_article(
-        &self,
-        query: ArticleVerificationQuery,
-    ) -> HttpResult<ArticleVerification> {
-        let url = self.endpoint("article/verify")?;
-
-        debug!(
-            endpoint = %url,
-            token = %query.token,
-            "verifying article"
-        );
-
-        let response: ArticleVerification =
-            self.get(url).query(&query).send_and_parse().await?;
-
-        Ok(response)
+    pub async fn verify_article(&self, query: ArticleVerificationQuery) -> HttpResult<ArticleVerification> {
+        verify_article(&self.token, query).await
     }
 
     /// Prepares video upload.
-    pub async fn upload_video_prepare(
-        &self,
-        request: VideoUploadPrepareRequest,
-    ) -> HttpResult<VideoUploadPrepareResponse> {
-        let url = self.endpoint("article/upload_video/preparevideo")?;
-
-        debug!(
-            endpoint = %url,
-            video_name = %request.video_name,
-            video_size = request.video_size,
-            "preparing video upload"
-        );
-
-        let response: VideoUploadPrepareResponse =
-            self.post(url).json(&request).send_and_parse().await?;
-
-        Ok(response)
+    pub async fn upload_video_prepare(&self, request: VideoUploadPrepareRequest) -> HttpResult<VideoUploadPrepareResponse> {
+        upload_video_prepare(&self.token, request).await
     }
 
     /// Verifies video upload.
-    pub async fn upload_video_verify(
-        &self,
-        request: VideoUploadVerifyRequest,
-    ) -> HttpResult<()> {
-        let url = self.endpoint("article/upload_video/verify")?;
-
-        debug!(
-            endpoint = %url,
-            upload_id = %request.upload_id,
-            "verifying video upload"
-        );
-
-        let _: serde_json::Value =
-            self.post(url).json(&request).send_and_parse().await?;
-
-        Ok(())
-    }
-
-    fn endpoint(&self, path: &str) -> HttpResult<Url> {
-        Url::parse(&format!("{BASE_URL}{path}")).map_err(|err| {
-            HttpError::configuration(format!("could not build endpoint URL: {err}"))
-        })
-    }
-
-    fn get(&self, url: Url) -> AuthenticatedRequest {
-        AuthenticatedRequest {
-            inner: self.inner.get(url).header(ACCESS_TOKEN_HEADER, &self.token),
-        }
-    }
-
-    fn post(&self, url: Url) -> AuthenticatedRequest {
-        AuthenticatedRequest {
-            inner: self
-                .inner
-                .post(url)
-                .header(ACCESS_TOKEN_HEADER, &self.token),
-        }
+    pub async fn upload_video_verify(&self, request: VideoUploadVerifyRequest) -> HttpResult<()> {
+        upload_video_verify(&self.token, request).await
     }
 }
