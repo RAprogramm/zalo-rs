@@ -251,6 +251,43 @@ impl OaClient {
         Ok(response)
     }
 
+    /// Lists recent chats.
+    pub async fn list_recent_chats(&self, query: RecentChatQuery) -> HttpResult<RecentChatList> {
+        let url = self.endpoint("user/listrecentchat")?;
+
+        debug!(
+            endpoint = %url,
+            offset = ?query.offset,
+            count = ?query.count,
+            "listing recent chats"
+        );
+
+        let list: RecentChatList = self.get(url).query(&query).send_and_parse().await?;
+
+        Ok(list)
+    }
+
+    /// Gets conversation history.
+    pub async fn get_conversation(
+        &self,
+        query: ConversationQuery,
+    ) -> HttpResult<ConversationHistory> {
+        let url = self.endpoint("user/conversation")?;
+
+        debug!(
+            endpoint = %url,
+            user_id = %query.user_id,
+            offset = ?query.offset,
+            count = ?query.count,
+            "fetching conversation"
+        );
+
+        let history: ConversationHistory =
+            self.get(url).query(&query).send_and_parse().await?;
+
+        Ok(history)
+    }
+
     fn endpoint(&self, path: &str) -> HttpResult<Url> {
         Url::parse(&format!("{BASE_URL}{path}")).map_err(|err| {
             HttpError::configuration(format!("could not build endpoint URL: {err}"))
