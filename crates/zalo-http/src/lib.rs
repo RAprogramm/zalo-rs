@@ -29,6 +29,8 @@ mod client_inner;
 pub mod client;
 /// Error types for the HTTP layer.
 pub mod error;
+/// Media upload manager.
+pub mod media;
 /// OAuth 2.0 client for Zalo authentication.
 pub mod oauth;
 /// OAuth request and response types.
@@ -42,6 +44,7 @@ pub mod rate_limiter;
 pub use client::OaClient;
 pub use client::token::{AccessTokenInfo, SecureToken, TokenManager};
 pub use error::{HttpError, HttpResult};
+pub use media::MediaManager;
 pub use oauth::OAuthClient;
 pub use oauth_types::OAuthTokenResponse;
 pub use rate_limiter::RateLimiter;
