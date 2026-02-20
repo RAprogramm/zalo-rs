@@ -124,7 +124,7 @@
 | `get_user_profile()` | ✅ | [`client_inner/client.rs:183-195`](../crates/zalo-http/src/client_inner/client.rs#L183-L195) | ✅ |
 
 **Структуры:**
-- ✅ `UserProfile` — [`user.rs:10-23`](../crates/zalo-types/src/user.rs#L10-L23)
+- ✅ `UserProfile` — [`user.rs:35-48`](../crates/zalo-types/src/user.rs#L35-L48)
 
 ---
 
@@ -133,12 +133,23 @@
 | Метод | Статус | Реализация | Тесты |
 |-------|--------|------------|-------|
 | `list_followers()` | ✅ | [`client_inner/client.rs:197-212`](../crates/zalo-http/src/client_inner/client.rs#L197-L212) | ✅ |
-| `update_follower_info()` | ✅ | [`client_inner/client.rs:214-226`](../crates/zalo-http/src/client_inner/client.rs#L214-L226) | ✅ |
+| `update_follower_info()` | ✅ | [`client_inner/client.rs:222-234`](../crates/zalo-http/src/client_inner/client.rs#L222-L234) | ✅ |
 
 **Структуры:**
-- ✅ `FollowerList` — [`user.rs:38-43`](../crates/zalo-types/src/user.rs#L38-L43)
-- ✅ `FollowerListQuery` — [`user.rs:28-35`](../crates/zalo-types/src/user.rs#L28-L35)
-- ✅ `UpdateFollowerRequest` — [`user.rs:46-126`](../crates/zalo-types/src/user.rs#L46-L126)
+- ✅ `FollowerList` — [`user.rs:63-68`](../crates/zalo-types/src/user.rs#L63-L68)
+- ✅ `FollowerListQuery` — [`user.rs:53-60`](../crates/zalo-types/src/user.rs#L53-L60)
+- ✅ `UpdateFollowerRequest` — [`user.rs:71-151`](../crates/zalo-types/src/user.rs#L71-L151)
+
+---
+
+### ✅ Информация об OA
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `get_oa_info()` | ✅ | [`client_inner/client.rs:214-220`](../crates/zalo-http/src/client_inner/client.rs#L214-L220) | ✅ |
+
+**Структуры:**
+- ✅ `OaInfo` — [`user.rs:10-32`](../crates/zalo-types/src/user.rs#L10-L32)
 
 ---
 
