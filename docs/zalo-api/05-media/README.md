@@ -2,16 +2,32 @@
 
 Загрузка изображений, файлов, GIF.
 
-**Статус:** В разработке (Приоритет 2)
+**Реализация:** ✅ [`crates/zalo-http/src/media/`](../../crates/zalo-http/src/media/)
 
 ---
 
 ## Методы
 
-| Метод | Файл | Описание |
-|-------|------|----------|
-| **Upload** | [upload/README.md](upload/README.md) | Загрузка файлов |
-| **Cache** | [cache/README.md](cache/README.md) | Кэширование file_id |
+| Метод | Статус | Файл |
+|-------|--------|------|
+| **Upload** | ✅ | [upload/README.md](upload/README.md) |
+
+---
+
+## MediaManager
+
+**Файл:** [`media/client.rs`](../../crates/zalo-http/src/media/client.rs)
+
+```rust
+use zalo_http::media::MediaManager;
+
+let manager = MediaManager::new("ACCESS_TOKEN")?;
+
+// Загрузка изображения
+let result = manager.upload_image("path/to/image.jpg").await?;
+println!("File ID: {}", result.file_id);
+println!("URL: {}", result.url);
+```
 
 ---
 
@@ -20,7 +36,7 @@
 | Тип | Размер | Форматы |
 |-----|--------|---------|
 | Image | 1 MB | JPG, PNG |
-| File | 5 MB | PDF, DOC, XLS |
+| File | 5 MB | PDF, DOC, DOCX, XLS, XLSX |
 | GIF | 1 MB | GIF |
 
 ---

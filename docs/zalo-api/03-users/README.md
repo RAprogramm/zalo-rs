@@ -2,35 +2,36 @@
 
 API для работы с подписчиками OA.
 
-**Реализация:** [`crates/zalo-http/src/client.rs`](../../crates/zalo-http/src/client.rs)
+**Реализация:** [`crates/zalo-http/src/client_inner/client.rs`](../../crates/zalo-http/src/client_inner/client.rs)
 
 ---
 
 ## Методы
 
-| Метод | Файл | Описание |
-|-------|------|----------|
-| **Profile** | [profile/README.md](profile/README.md) | Профиль пользователя |
-| **Followers** | [followers/README.md](followers/README.md) | Список подписчиков |
-| **Conversations** | [conversations/README.md](conversations/README.md) | Диалоги |
+| Метод | Статус | Файл |
+|-------|--------|------|
+| **Profile** | ✅ | [profile/README.md](profile/README.md) |
+| **Followers** | ✅ | [followers/README.md](followers/README.md) |
+| **Conversations** | ✅ | [conversations/README.md](conversations/README.md) |
 
 ---
 
 ## Структуры
 
-**Файл:** [`types.rs`](../../crates/zalo-http/src/types.rs)
+**Файл:** [`zalo-types/src/user.rs`](../../crates/zalo-types/src/user.rs)
 
 ```rust
 pub struct UserProfile {
     pub user_id: String,
     pub display_name: String,
-    pub avatar: String,
-    pub is_following: bool,
+    pub avatar: Option<String>,
+    pub gender: Option<i32>,
+    pub birthday: Option<String>,
 }
 
 pub struct FollowerList {
-    pub followers: Vec<UserProfile>,
-    pub total: u64,
+    pub data: Vec<String>,
+    pub total: i32,
 }
 ```
 

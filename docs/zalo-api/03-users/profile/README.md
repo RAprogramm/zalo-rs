@@ -2,7 +2,7 @@
 
 Получение информации о подписчике.
 
-**Реализация:** [`client.rs`](../../crates/zalo-http/src/client.rs#L134-L156)
+**Реализация:** ✅ [`client_inner/client.rs:162-174`](../../crates/zalo-http/src/client_inner/client.rs#L162-L174)
 
 ---
 
@@ -15,21 +15,31 @@ let client = OaClient::new("TOKEN")?;
 let profile = client.get_user_profile("USER_ID").await?;
 
 println!("Имя: {}", profile.display_name);
-println!("Подписан: {}", profile.is_following);
+println!("Аватар: {:?}", profile.avatar);
 ```
 
 **Endpoint:** `GET /v3.0/oa/user/detail`
 
-**Структуры:** [`types.rs`](../../crates/zalo-http/src/types.rs#L140-L160)
+**Структура:** [`UserProfile`](../../crates/zalo-types/src/user.rs#L10-L23)
+
+```rust
+pub struct UserProfile {
+    pub user_id: String,
+    pub display_name: String,
+    pub avatar: Option<String>,
+    pub gender: Option<i32>,
+    pub birthday: Option<String>,
+}
+```
 
 ---
 
 ## Ошибки
 
-| Код | Значение |
-|-----|----------|
-| `-213` | Пользователь не подписан |
-| `-204` | Токен истёк |
+| Код | Значение | Обработка |
+|-----|----------|-----------|
+| `-213` | Пользователь не подписан | [`error.rs`](../../crates/zalo-http/src/error.rs) |
+| `-204` | Токен истёк | [`error.rs:74`](../../crates/zalo-http/src/error.rs#L74) |
 
 ---
 

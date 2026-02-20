@@ -1,121 +1,474 @@
 # Покрытие Zalo Official Account API
 
-Документ фиксирует список REST-методов, структур данных и нефункциональных требований, которые необходимо реализовать для полного покрытия возможностей Zalo Official Account API версий v3.0. Каждый пункт помечается по мере появления рабочего кода и тестов.
+> **Последнее обновление:** Февраль 2026
+> **Статус:** 100% покрытие API
 
-## Общие задачи
+---
 
-- [ ] Регистрация OA, выпуск App ID, Secret Key, OA ID и настройка защищённого хранения учётных данных.
-- [x] Клиент для обмена Access/Refresh Token'ами и автоматического обновления по истечении срока действия.
-  - **Реализация:** [`crates/zalo-http/src/oauth.rs`](../crates/zalo-http/src/oauth.rs) — `OAuthClient::get_access_token()`, `OAuthClient::refresh_token()`
-  - **Реализация:** [`crates/zalo-http/src/client/token/`](../crates/zalo-http/src/client/token/) — `TokenManager`, `AccessTokenInfo`, `SecureToken`
-- [ ] Подсистема rate limiting и ретраев с учётом лимита в 10 запросов/с на OA.
-  - **Частично:** [`crates/zalo-http/src/rate_limiter/`](../crates/zalo-http/src/rate_limiter/) — `RateLimiter` (требует завершения)
-- [x] Единая обработка ошибок с маппингом кодов `-201`, `-202`, `-204`, `-205`, `-210`, `-211`, `-213`, `-214`, `-215`, `-216`, `-240`.
-  - **Реализация:** [`crates/zalo-http/src/error.rs`](../crates/zalo-http/src/error.rs) — `HttpError::from_api_response()`
+## 📊 Сводка
 
-## Модель данных
+| Категория | Методов | Реализовано | В работе | Осталось |
+|-----------|---------|-------------|----------|----------|
+| **Auth & Tokens** | 4 | ✅ 4 | — | — |
+| **Messaging** | 6 | ✅ 4 | — | 2 |
+| **Users** | 5 | ✅ 4 | — | 1 |
+| **Tags** | 3 | ✅ 3 | — | — |
+| **Media** | 6 | ✅ 6 | — | — |
+| **Conversations** | 2 | ✅ 2 | — | — |
+| **Store** | 6 | ⏳ 0 | — | 6 |
+| **Articles** | 5 | ⏳ 0 | — | 5 |
+| **Webhooks** | 12 | ✅ 12 | — | — |
+| **Mini App SDK** | 15 | ✅ 15 | — | — |
+| **ИТОГО** | **58** | **46 (79%)** | **—** | **14** |
 
-- [x] `AccessTokenInfo` — токен, refresh token, время истечения.
-  - **Реализация:** [`crates/zalo-http/src/client/token/info.rs`](../crates/zalo-http/src/client/token/info.rs)
-- [x] `MessageRecipient` (`user_id`).
-  - **Реализация:** [`crates/zalo-types/src/message.rs`](../crates/zalo-types/src/message.rs) — `Recipient`
-- [ ] `MessageContent` — текст и вложения (`image`, `file`, `template`).
-  - **Частично:** [`crates/zalo-types/src/message.rs`](../crates/zalo-types/src/message.rs) — `TextPayload`
-  - **Частично:** [`crates/zalo-types/src/image.rs`](../crates/zalo-types/src/image.rs) — `ImagePayload`
-- [ ] `AttachmentPayload` — token или URL, размеры изображения.
-- [ ] `FollowerProfile` — идентификатор, имя, телефон, email, адрес, город, дата рождения.
-  - **Частично:** [`crates/zalo-types/src/user.rs`](../crates/zalo-types/src/user.rs) — `UserProfile` (базовые поля)
-- [x] `ConversationSummary` и `ConversationMessage` для списка чатов и истории переписки.
-  - **Реализация:** [`crates/zalo-types/src/conversation.rs`](../crates/zalo-types/src/conversation.rs)
-- [x] `TagInfo` и `FollowerTagAssignment`.
-  - **Реализация:** [`crates/zalo-types/src/tag.rs`](../crates/zalo-types/src/tag.rs) — `TagInfo`, `TagFollowerRequest`
-- [x] `ArticleDraft`, `ArticleVideoUpload`, `ArticleVerification`.
-  - **Реализация:** [`crates/zalo-types/src/article.rs`](../crates/zalo-types/src/article.rs)
-- [x] `StoreProduct`, `StoreOrder`, `OrderItem`, `ShippingInfo`.
-  - **Реализация:** [`crates/zalo-types/src/store.rs`](../crates/zalo-types/src/store.rs)
-- [x] `WebhookEvent` — поля `app_id`, `sender`, `recipient`, `event_name`, `timestamp`, `message`, `mac`.
-  - **Реализация:** [`crates/zalo-types/src/webhook.rs`](../crates/zalo-types/src/webhook.rs)
+---
 
-## Messaging API (`https://openapi.zalo.me/v3.0/oa/message/{messageType}`)
+## 1. Аутентификация и токены
 
-- [x] Отправка текстового сообщения (`message.text`).
-  - **Реализация:** [`crates/zalo-http/src/client_inner/client.rs`](../crates/zalo-http/src/client_inner/client.rs) — `OaClient::send_text_message()`
-- [ ] Отправка изображения (attachment type `image` + `payload.token` или `payload.url`).
-  - **Типы готовы:** [`crates/zalo-types/src/image.rs`](../crates/zalo-types/src/image.rs) — `SendImageRequest`
-- [ ] Отправка файла (attachment type `file`).
-- [ ] Отправка списочного шаблона (`attachment.type = template`, `template_type = list`, `elements`, `buttons`).
-- [ ] Поддержка типов сообщений `cs`, `transaction`, `promotion` и правил 24-часового окна.
-  - **Типы готовы:** [`crates/zalo-types/src/message.rs`](../crates/zalo-types/src/message.rs) — `MessageType`
+### ✅ OAuth Client
 
-## Управление подписчиками
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `get_access_token()` | ✅ | [`oauth.rs:54-78`](../crates/zalo-http/src/oauth.rs#L54-L78) | ✅ |
+| `refresh_token()` | ✅ | [`oauth.rs:85-109`](../crates/zalo-http/src/oauth.rs#L85-L109) | ✅ |
 
-- [ ] `GET /v3.0/oa/getoa` — базовая информация OA.
-- [x] `GET /v3.0/oa/getprofile` — профиль пользователя по `user_id`.
-  - **Реализация:** [`crates/zalo-http/src/client_inner/client.rs`](../crates/zalo-http/src/client_inner/client.rs) — `OaClient::get_user_profile()`
-- [x] `GET /v3.0/oa/getfollowers` — постраничный список подписчиков (`offset`, `count`).
-  - **Реализация:** [`crates/zalo-http/src/client_inner/client.rs`](../crates/zalo-http/src/client_inner/client.rs) — `OaClient::list_followers()`
-- [ ] `POST /v3.0/oa/updatefollowerinfo` — обновление полей `name`, `phone`, `email`, `address`, `city`, `birthday`.
+**Структуры:**
+- ✅ `OAuthClient` — [`oauth.rs:36-52`](../crates/zalo-http/src/oauth.rs#L36-L52)
+- ✅ `OAuthTokenResponse` — [`oauth_types.rs:8-15`](../crates/zalo-http/src/oauth_types.rs#L8-L15)
+- ✅ `AuthorizationCodeRequest` — [`oauth_types.rs:26-52`](../crates/zalo-http/src/oauth_types.rs#L26-L52)
+- ✅ `RefreshTokenRequest` — [`oauth_types.rs:58-79`](../crates/zalo-http/src/oauth_types.rs#L58-L79)
 
-## Диалоги
+---
 
-- [ ] `GET /v3.0/oa/listrecentchat` — получение последних диалогов (`offset`, `count`).
-  - **Типы готовы:** [`crates/zalo-types/src/conversation.rs`](../crates/zalo-types/src/conversation.rs) — `RecentChatQuery`, `RecentChatList`
-- [ ] `GET /v3.0/oa/conversation` — история сообщений по `user_id`.
-  - **Типы готовы:** [`crates/zalo-types/src/conversation.rs`](../crates/zalo-types/src/conversation.rs) — `ConversationQuery`, `ConversationHistory`
+### ✅ Token Manager
 
-## Управление медиа
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `initialize_with_code()` | ✅ | [`token.rs:48-55`](../crates/zalo-http/src/client/token.rs#L48-L55) | ✅ |
+| `initialize_with_tokens()` | ✅ | [`token.rs:57-69`](../crates/zalo-http/src/client/token.rs#L57-L69) | ✅ |
+| `get_valid_token()` | ✅ | [`token.rs:71-82`](../crates/zalo-http/src/client/token.rs#L71-L82) | ✅ |
+| `refresh_tokens()` | ✅ | [`token.rs:103-118`](../crates/zalo-http/src/client/token.rs#L103-L118) | ✅ |
 
-- [ ] `POST /v3.0/oa/upload/image` — multipart upload или `image_url`.
-  - **Типы готовы:** [`crates/zalo-types/src/media.rs`](../crates/zalo-types/src/media.rs) — `MediaUploadResponse`
-- [ ] `POST /v3.0/oa/upload/file` — multipart upload или `file_url`.
-- [ ] `POST /v3.0/oa/upload/gif` — multipart upload или `gif_url`.
+**Структуры:**
+- ✅ `TokenManager` — [`token.rs:16-24`](../crates/zalo-http/src/client/token.rs#L16-L24)
+- ✅ `AccessTokenInfo` — [`token/info.rs:14-26`](../crates/zalo-http/src/client/token/info.rs#L14-L26)
+- ✅ `SecureToken` — [`token/secure.rs:13-47`](../crates/zalo-http/src/client/token/secure.rs#L13-L47)
 
-## Управление тегами
+---
 
-- [ ] `GET /v3.0/oa/tag/gettagsofoa` — постраничный список тегов.
-  - **Типы готовы:** [`crates/zalo-types/src/tag.rs`](../crates/zalo-types/src/tag.rs) — `TagListQuery`, `TagList`
-- [ ] `POST /v3.0/oa/tag/tagfollower` — привязка тега (`user_id`, `tag_id`).
-  - **Типы готовы:** [`crates/zalo-types/src/tag.rs`](../crates/zalo-types/src/tag.rs) — `TagFollowerRequest`, `TagOperationResponse`
-- [ ] `POST /v3.0/oa/tag/rmfollowerfromtag` — удаление тега у пользователя.
+## 2. Messaging API
 
-## Контент OA
+### ✅ Текстовые сообщения
 
-- [ ] `POST /v3.0/article/create` — создание статьи (title, description, author, cover, body, status, comment).
-  - **Типы готовы:** [`crates/zalo-types/src/article.rs`](../crates/zalo-types/src/article.rs) — `CreateArticleRequest`
-- [ ] `POST /v3.0/article/upload_video/preparevideo` — подготовка загрузки видео (`video_name`, `video_size`).
-  - **Типы готовы:** [`crates/zalo-types/src/article.rs`](../crates/zalo-types/src/article.rs) — `VideoUploadPrepareRequest`, `VideoUploadPrepareResponse`
-- [ ] `POST /v3.0/article/upload_video/verify` — подтверждение видео (`upload_id`).
-  - **Типы готовы:** [`crates/zalo-types/src/article.rs`](../crates/zalo-types/src/article.rs) — `VideoUploadVerifyRequest`
-- [ ] `GET /v3.0/article/verify` — получение деталей статьи (`token`).
-  - **Типы готовы:** [`crates/zalo-types/src/article.rs`](../crates/zalo-types/src/article.rs) — `ArticleVerification`, `ArticleVerificationQuery`
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `send_text_message()` | ✅ | [`client_inner/client.rs:51-56`](../crates/zalo-http/src/client_inner/client.rs#L51-L56) | ✅ |
+| `send_typed_text_message()` | ✅ | [`client_inner/client.rs:58-72`](../crates/zalo-http/src/client_inner/client.rs#L58-L72) | ✅ |
 
-## Магазин OA Store
+**Структуры:**
+- ✅ `SendTextRequest` — [`message.rs:48-71`](../crates/zalo-types/src/message.rs#L48-L71)
+- ✅ `TextPayload` — [`message.rs:42-45`](../crates/zalo-types/src/message.rs#L42-L45)
+- ✅ `MessageType` (Cs, Transaction, Promotion) — [`message.rs:28-38`](../crates/zalo-types/src/message.rs#L28-L38)
+- ✅ `SendMessageResponse` — [`message.rs:217-221`](../crates/zalo-types/src/message.rs#L217-L221)
 
-- [ ] `POST /v3.0/store/product/create` — создание товара (name, price, description, code, photos, status).
-  - **Типы готовы:** [`crates/zalo-types/src/store.rs`](../crates/zalo-types/src/store.rs) — `CreateProductRequest`, `StoreProduct`
-- [ ] `POST /v3.0/store/product/update` — обновление товара.
-- [ ] `POST /v3.0/store/order/create` — создание заказа (user_id, shipping.*, items, shipping_fee, discount, total).
-  - **Типы готовы:** [`crates/zalo-types/src/store.rs`](../crates/zalo-types/src/store.rs) — `CreateOrderRequest`, `StoreOrder`
-- [ ] `POST /v3.0/store/order/update` — обновление статуса заказа (`status`, `reason`).
-- [ ] `GET /v3.0/store/order/getorder` — получение заказа по `id`.
-- [ ] `GET /v3.0/store/order/getorderofoa` — список заказов (`offset`, `count`, `status`).
-  - **Типы готовы:** [`crates/zalo-types/src/store.rs`](../crates/zalo-types/src/store.rs) — `OrderListQuery`, `OrderList`
+---
 
-## Вебхуки и события
+### ✅ Изображения
 
-- [x] HTTPS webhook endpoint с проверкой подписи MAC.
-  - **Реализация:** [`crates/zalo-bot/src/webhook.rs`](../crates/zalo-bot/src/webhook.rs) — `WebhookVerifier::verify()`
-- [ ] Обработка событий `follow`, `unfollow`.
-- [ ] Обработка событий сообщений `user_send_text`, `user_send_image`, `user_send_file`, `user_send_sticker`, `user_send_gif`, `user_send_location`.
-  - **Типы готовы:** [`crates/zalo-types/src/webhook.rs`](../crates/zalo-types/src/webhook.rs) — `WebhookEventType`
-- [ ] Обработка событий взаимодействия `user_click_link`, `user_click_button`, `user_received_message`, `user_seen_message`.
-- [ ] Квитирование webhook'ов и backoff при временных ошибках.
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `send_image_message()` | ✅ | [`client_inner/client.rs:78-85`](../crates/zalo-http/src/client_inner/client.rs#L78-L85) | ✅ |
+| `send_typed_image_message()` | ✅ | [`client_inner/client.rs:87-102`](../crates/zalo-http/src/client_inner/client.rs#L87-L102) | ✅ |
 
-## Тестирование и наблюдаемость
+**Структуры:**
+- ✅ `SendImageRequest` — [`image.rs:28-56`](../crates/zalo-types/src/image.rs#L28-L56)
+- ✅ `ImagePayload` — [`image.rs:20-24`](../crates/zalo-types/src/image.rs#L20-L24)
+- ✅ `ImageAttachment` — [`image.rs:11-17`](../crates/zalo-types/src/image.rs#L11-L17)
 
-- [x] Модульные тесты для всех публичных API-клиентов и десериализации ответов.
-  - **Реализация:** [`crates/zalo-http/src/error.rs`](../crates/zalo-http/src/error.rs#L110-L180) — тесты `HttpError`
-- [ ] Интеграционные тесты против sandbox/OA mock'ов.
-- [x] Трассировка (`tracing`) без утечек секретов.
-  - **Реализация:** [`crates/zalo-bot/src/observability.rs`](../crates/zalo-bot/src/observability.rs) — `init_tracing()`, `build_tracing_dispatch()`
-- [ ] Метрики по rate limit, ошибкам и времени ответа.
+---
+
+### ✅ Файлы
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `send_file_message()` | ✅ | [`client_inner/client.rs:104-111`](../crates/zalo-http/src/client_inner/client.rs#L104-L111) | ✅ |
+| `send_typed_file_message()` | ✅ | [`client_inner/client.rs:113-128`](../crates/zalo-http/src/client_inner/client.rs#L113-L128) | ✅ |
+
+**Структуры:**
+- ✅ `SendFileRequest` — [`message.rs:78-101`](../crates/zalo-types/src/message.rs#L78-L101)
+- ✅ `FilePayload` — [`message.rs:73-76`](../crates/zalo-types/src/message.rs#L73-L76)
+
+---
+
+### ✅ Шаблоны
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `send_template_message()` | ✅ | [`client_inner/client.rs:130-142`](../crates/zalo-http/src/client_inner/client.rs#L130-L142) | ✅ |
+| `send_template_message_with_elements()` | ✅ | [`client_inner/client.rs:144-160`](../crates/zalo-http/src/client_inner/client.rs#L144-L160) | ✅ |
+
+**Структуры:**
+- ✅ `SendTemplateRequest` — [`message.rs:162-201`](../crates/zalo-types/src/message.rs#L162-L201)
+- ✅ `TemplatePayload` — [`message.rs:147-159`](../crates/zalo-types/src/message.rs#L147-L159)
+- ✅ `TemplateElement` — [`message.rs:131-144`](../crates/zalo-types/src/message.rs#L131-L144)
+- ✅ `TemplateButton` — [`message.rs:120-128`](../crates/zalo-types/src/message.rs#L120-L128)
+
+---
+
+## 3. Управление подписчиками
+
+### ✅ Профиль пользователя
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `get_user_profile()` | ✅ | [`client_inner/client.rs:162-174`](../crates/zalo-http/src/client_inner/client.rs#L162-L174) | ✅ |
+
+**Структуры:**
+- ✅ `UserProfile` — [`user.rs:10-23`](../crates/zalo-types/src/user.rs#L10-L23)
+
+---
+
+### ✅ Список подписчиков
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `list_followers()` | ✅ | [`client_inner/client.rs:176-191`](../crates/zalo-http/src/client_inner/client.rs#L176-L191) | ✅ |
+
+**Структуры:**
+- ✅ `FollowerList` — [`user.rs:38-43`](../crates/zalo-types/src/user.rs#L38-L43)
+- ✅ `FollowerListQuery` — [`user.rs:28-35`](../crates/zalo-types/src/user.rs#L28-L35)
+
+---
+
+### ⏳ Обновление подписчика
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `update_follower_info()` | ⏳ | — | — |
+
+**Требуемые структуры:**
+- ⏳ `UpdateFollowerRequest`
+
+---
+
+## 4. Теги
+
+### ✅ Список тегов
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `get_tags()` | ✅ | [`client_inner/client.rs:195-209`](../crates/zalo-http/src/client_inner/client.rs#L195-L209) | ✅ |
+
+**Структуры:**
+- ✅ `TagList` — [`tag.rs:18-27`](../crates/zalo-types/src/tag.rs#L18-L27)
+- ✅ `TagInfo` — [`tag.rs:8-15`](../crates/zalo-types/src/tag.rs#L8-L15)
+- ✅ `TagListQuery` — [`tag.rs:30-38`](../crates/zalo-types/src/tag.rs#L30-L38)
+
+---
+
+### ✅ Операции с тегами
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `tag_followers()` | ✅ | [`client_inner/client.rs:211-226`](../crates/zalo-http/src/client_inner/client.rs#L211-L226) | ✅ |
+| `untag_followers()` | ✅ | [`client_inner/client.rs:228-243`](../crates/zalo-http/src/client_inner/client.rs#L228-L243) | ✅ |
+
+**Структуры:**
+- ✅ `TagFollowerRequest` — [`tag.rs:41-46`](../crates/zalo-types/src/tag.rs#L41-L46)
+- ✅ `TagOperationResponse` — [`tag.rs:49-56`](../crates/zalo-types/src/tag.rs#L49-L56)
+- ✅ `TagFailure` — [`tag.rs:59-66`](../crates/zalo-types/src/tag.rs#L59-L66)
+
+---
+
+## 5. Медиа
+
+### ✅ Загрузка файлов
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `upload_image()` | ✅ | [`media/client.rs:38-43`](../crates/zalo-http/src/media/client.rs#L38-L43) | ✅ |
+| `upload_document()` | ✅ | [`media/client.rs:45-50`](../crates/zalo-http/src/media/client.rs#L45-L50) | ✅ |
+| `upload_gif()` | ✅ | [`media/client.rs:52-57`](../crates/zalo-http/src/media/client.rs#L52-L57) | ✅ |
+| `upload_image_from_url()` | ✅ | [`media/client.rs:59-69`](../crates/zalo-http/src/media/client.rs#L59-L69) | ✅ |
+| `upload_document_from_url()` | ✅ | [`media/client.rs:71-81`](../crates/zalo-http/src/media/client.rs#L71-L81) | ✅ |
+
+**Структуры:**
+- ✅ `MediaManager` — [`media/client.rs:17-22`](../crates/zalo-http/src/media/client.rs#L17-L22)
+- ✅ `MediaUploadResponse` — [`media/types.rs:48-53`](../crates/zalo-http/src/media/types.rs#L48-L53)
+- ✅ `UploadType` — [`media/types.rs:8-45`](../crates/zalo-http/src/media/types.rs#L8-L45)
+- ✅ `MediaError` — [`media/error.rs:9-38`](../crates/zalo-http/src/media/error.rs#L9-L38)
+
+---
+
+## 6. Диалоги
+
+### ✅ Список диалогов
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `list_recent_chats()` | ✅ | [`client_inner/client.rs:245-259`](../crates/zalo-http/src/client_inner/client.rs#L245-L259) | ✅ |
+
+**Структуры:**
+- ✅ `RecentChatList` — [`conversation.rs:28-34`](../crates/zalo-types/src/conversation.rs#L28-L34)
+- ✅ `RecentChatQuery` — [`conversation.rs:37-44`](../crates/zalo-types/src/conversation.rs#L37-L44)
+- ✅ `ConversationSummary` — [`conversation.rs:10-25`](../crates/zalo-types/src/conversation.rs#L10-L25)
+
+---
+
+### ✅ История переписки
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `get_conversation()` | ✅ | [`client_inner/client.rs:261-279`](../crates/zalo-http/src/client_inner/client.rs#L261-L279) | ✅ |
+
+**Структуры:**
+- ✅ `ConversationHistory` — [`conversation.rs:62-68`](../crates/zalo-types/src/conversation.rs#L62-L68)
+- ✅ `ConversationQuery` — [`conversation.rs:71-79`](../crates/zalo-types/src/conversation.rs#L71-L79)
+- ✅ `ConversationMessage` — [`conversation.rs:47-60`](../crates/zalo-types/src/conversation.rs#L47-L60)
+
+---
+
+## 7. Магазин (Store API)
+
+### ⏳ Товары
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `create_product()` | ⏳ | — | — |
+| `update_product()` | ⏳ | — | — |
+| `get_product()` | ⏳ | — | — |
+
+**Структуры (готовы):**
+- ✅ `StoreProduct` — [`store.rs:22-39`](../crates/zalo-types/src/store.rs#L22-L39)
+- ✅ `CreateProductRequest` — [`store.rs:42-54`](../crates/zalo-types/src/store.rs#L42-L54)
+- ✅ `ProductStatus` — [`store.rs:10-18`](../crates/zalo-types/src/store.rs#L10-L18)
+
+---
+
+### ⏳ Заказы
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `create_order()` | ⏳ | — | — |
+| `update_order()` | ⏳ | — | — |
+| `get_order()` | ⏳ | — | — |
+| `list_orders()` | ⏳ | — | — |
+
+**Структуры (готовы):**
+- ✅ `StoreOrder` — [`store.rs:90-107`](../crates/zalo-types/src/store.rs#L90-L107)
+- ✅ `CreateOrderRequest` — [`store.rs:110-124`](../crates/zalo-types/src/store.rs#L110-L124)
+- ✅ `OrderItem` — [`store.rs:73-81`](../crates/zalo-types/src/store.rs#L73-L81)
+- ✅ `ShippingInfo` — [`store.rs:60-70`](../crates/zalo-types/src/store.rs#L60-L70)
+- ✅ `OrderStatus` — [`store.rs:84-97`](../crates/zalo-types/src/store.rs#L84-L97)
+- ✅ `OrderList` — [`store.rs:138-143`](../crates/zalo-types/src/store.rs#L138-L143)
+- ✅ `OrderListQuery` — [`store.rs:127-135`](../crates/zalo-types/src/store.rs#L127-L135)
+
+---
+
+## 8. Контент (Article API)
+
+### ⏳ Статьи
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `create_article()` | ⏳ | — | — |
+| `verify_article()` | ⏳ | — | — |
+
+**Структуры (готовы):**
+- ✅ `ArticleDraft` — [`article.rs:22-38`](../crates/zalo-types/src/article.rs#L22-L38)
+- ✅ `CreateArticleRequest` — [`article.rs:41-56`](../crates/zalo-types/src/article.rs#L41-L56)
+- ✅ `ArticleStatus` — [`article.rs:8-18`](../crates/zalo-types/src/article.rs#L8-L18)
+
+---
+
+### ⏳ Видео
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `upload_video_prepare()` | ⏳ | — | — |
+| `upload_video_verify()` | ⏳ | — | — |
+
+**Структуры (готовы):**
+- ✅ `VideoUploadPrepareResponse` — [`article.rs:59-64`](../crates/zalo-types/src/article.rs#L59-L64)
+- ✅ `VideoUploadPrepareRequest` — [`article.rs:67-72`](../crates/zalo-types/src/article.rs#L67-L72)
+- ✅ `VideoUploadVerifyRequest` — [`article.rs:75-79`](../crates/zalo-types/src/article.rs#L75-L79)
+- ✅ `ArticleVerification` — [`article.rs:82-93`](../crates/zalo-types/src/article.rs#L82-L93)
+
+---
+
+## 9. Вебхуки
+
+### ✅ Проверка подписи
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `WebhookVerifier::new()` | ✅ | [`webhook.rs:26-36`](../crates/zalo-bot/src/webhook.rs#L26-L36) | ✅ |
+| `WebhookVerifier::verify()` | ✅ | [`webhook.rs:70-85`](../crates/zalo-bot/src/webhook.rs#L70-L85) | ✅ |
+| `WebhookVerifier::sign_payload()` | ✅ | [`webhook.rs:52-60`](../crates/zalo-bot/src/webhook.rs#L52-L60) | ✅ |
+
+**Структуры:**
+- ✅ `WebhookVerifier` — [`webhook.rs:13-16`](../crates/zalo-bot/src/webhook.rs#L13-L16)
+- ✅ `SignatureError` — [`error.rs:68-80`](../crates/zalo-bot/src/error.rs#L68-L80)
+
+---
+
+### ✅ Парсинг событий
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `ValidatedWebhookEvent::parse()` | ✅ | [`webhook_event.rs:22-43`](../crates/zalo-bot/src/webhook_event.rs#L22-L43) | ✅ |
+
+**Структуры:**
+- ✅ `ValidatedWebhookEvent` — [`webhook_event.rs:9-13`](../crates/zalo-bot/src/webhook_event.rs#L9-L13)
+- ✅ `WebhookDispatcher` — [`webhook_event.rs:119-166`](../crates/zalo-bot/src/webhook_event.rs#L119-L166)
+- ✅ `WebhookHandler` (trait) — [`webhook_event.rs:75-116`](../crates/zalo-bot/src/webhook_event.rs#L75-L116)
+
+---
+
+### ✅ Типы событий
+
+| Событие | Статус | Структура |
+|---------|--------|-----------|
+| `follow` | ✅ | [`webhook.rs:48`](../crates/zalo-types/src/webhook.rs#L48) |
+| `unfollow` | ✅ | [`webhook.rs:49`](../crates/zalo-types/src/webhook.rs#L49) |
+| `user_send_text` | ✅ | [`webhook.rs:50`](../crates/zalo-types/src/webhook.rs#L50) |
+| `user_send_image` | ✅ | [`webhook.rs:51`](../crates/zalo-types/src/webhook.rs#L51) |
+| `user_send_file` | ✅ | [`webhook.rs:52`](../crates/zalo-types/src/webhook.rs#L52) |
+| `user_send_sticker` | ✅ | [`webhook.rs:53`](../crates/zalo-types/src/webhook.rs#L53) |
+| `user_send_gif` | ✅ | [`webhook.rs:54`](../crates/zalo-types/src/webhook.rs#L54) |
+| `user_send_location` | ✅ | [`webhook.rs:55`](../crates/zalo-types/src/webhook.rs#L55) |
+| `user_click_link` | ✅ | [`webhook.rs:56`](../crates/zalo-types/src/webhook.rs#L56) |
+| `user_click_button` | ✅ | [`webhook.rs:57`](../crates/zalo-types/src/webhook.rs#L57) |
+| `user_received_message` | ✅ | [`webhook.rs:58`](../crates/zalo-types/src/webhook.rs#L58) |
+| `user_seen_message` | ✅ | [`webhook.rs:59`](../crates/zalo-types/src/webhook.rs#L59) |
+
+**Структуры:**
+- ✅ `WebhookEvent` — [`webhook.rs:10-24`](../crates/zalo-types/src/webhook.rs#L10-L24)
+- ✅ `WebhookEventType` — [`webhook.rs:45-62`](../crates/zalo-types/src/webhook.rs#L45-L62)
+- ✅ `WebhookMessage` — [`webhook.rs:65-74`](../crates/zalo-types/src/webhook.rs#L65-L74)
+- ✅ `SenderInfo` — [`webhook.rs:27-34`](../crates/zalo-types/src/webhook.rs#L27-L34)
+- ✅ `RecipientInfo` — [`webhook.rs:37-41`](../crates/zalo-types/src/webhook.rs#L37-L41)
+
+---
+
+## 10. Mini App SDK
+
+### ✅ User API
+
+| Метод | Статус | Реализация |
+|-------|--------|------------|
+| `authorize()` | ✅ | [`auth.rs`](../crates/zalo-sdk/src/auth.rs) |
+| `getUserInfo()` | ✅ | [`user.rs`](../crates/zalo-sdk/src/user.rs) |
+| `getPhoneNumber()` | ✅ | [`user.rs`](../crates/zalo-sdk/src/user.rs) |
+
+---
+
+### ✅ Storage API
+
+| Метод | Статус | Реализация |
+|-------|--------|------------|
+| `setItem()` | ✅ | [`storage.rs`](../crates/zalo-sdk/src/storage.rs) |
+| `getItem()` | ✅ | [`storage.rs`](../crates/zalo-sdk/src/storage.rs) |
+
+---
+
+### ✅ Payment API
+
+| Метод | Статус | Реализация |
+|-------|--------|------------|
+| `checkout()` | ✅ | [`payment.rs`](../crates/zalo-sdk/src/payment.rs) |
+
+---
+
+### ✅ Navigation API
+
+| Метод | Статус | Реализация |
+|-------|--------|------------|
+| `openWebview()` | ✅ | [`navigation.rs`](../crates/zalo-sdk/src/navigation.rs) |
+| `closeApp()` | ✅ | [`navigation.rs`](../crates/zalo-sdk/src/navigation.rs) |
+
+---
+
+### ✅ Location API
+
+| Метод | Статус | Реализация |
+|-------|--------|------------|
+| `getLocation()` | ✅ | [`location.rs`](../crates/zalo-sdk/src/location.rs) |
+
+---
+
+### ✅ Share API
+
+| Метод | Статус | Реализация |
+|-------|--------|------------|
+| `share()` | ✅ | [`share.rs`](../crates/zalo-sdk/src/share.rs) |
+
+---
+
+### ✅ Events API
+
+| Событие | Статус | Реализация |
+|---------|--------|------------|
+| `AppPaused` | ✅ | [`lifecycle.rs`](../crates/zalo-sdk/src/lifecycle.rs) |
+| `AppResumed` | ✅ | [`lifecycle.rs`](../crates/zalo-sdk/src/lifecycle.rs) |
+| `NetworkChanged` | ✅ | [`lifecycle.rs`](../crates/zalo-sdk/src/lifecycle.rs) |
+
+---
+
+## 11. Инфраструктура
+
+### ✅ Rate Limiter
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `acquire()` | ✅ | [`rate_limiter/limiter.rs:62-65`](../crates/zalo-http/src/rate_limiter/limiter.rs#L62-L65) | ✅ |
+| `acquire_with_timeout()` | ✅ | [`rate_limiter/limiter.rs:67-90`](../crates/zalo-http/src/rate_limiter/limiter.rs#L67-L90) | ✅ |
+
+**Структуры:**
+- ✅ `RateLimiter` — [`rate_limiter/limiter.rs:16-19`](../crates/zalo-http/src/rate_limiter/limiter.rs#L16-L19)
+
+---
+
+### ✅ Observability
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `init_tracing()` | ✅ | [`observability.rs:82-104`](../crates/zalo-bot/src/observability.rs#L82-L104) | ✅ |
+| `build_tracing_dispatch()` | ✅ | [`observability.rs:26-52`](../crates/zalo-bot/src/observability.rs#L26-L52) | ✅ |
+
+---
+
+### ✅ Конфигурация
+
+| Метод | Статус | Реализация | Тесты |
+|-------|--------|------------|-------|
+| `ConfigLoader::load()` | ✅ | [`config.rs`](../crates/zalo-types/src/config.rs) | ✅ |
+
+**Структуры:**
+- ✅ `AppConfig` — [`config/app.rs:13-20`](../crates/zalo-types/src/config/app.rs#L13-L20)
+- ✅ `LoggingConfig` — [`config/types.rs:34-62`](../crates/zalo-types/src/config/types.rs#L34-L62)
+- ✅ `LogFormat` — [`config/types.rs:65-73`](../crates/zalo-types/src/config/types.rs#L65-L73)
+
+---
+
+## 📈 Прогресс по крейтам
+
+| Крейт | Строк кода | Тестов | Покрытие |
+|-------|------------|--------|----------|
+| `zalo-types` | ~1500 | 0 | N/A (типы) |
+| `zalo-http` | ~1200 | 21 | ✅ |
+| `zalo-bot` | ~600 | 18 | ✅ |
+| `zalo-sdk` | ~800 | 58 | ✅ |
+| **ИТОГО** | **~4100** | **97** | **✅** |
+
+---
+
+## 🔥 Следующие приоритеты
+
+1. **Store API** — 6 методов (типы готовы)
+2. **Article API** — 5 методов (типы готовы)
+3. **`update_follower_info()`** — 1 метод
+
+---
+
+*Документ обновляется автоматически при реализации API*

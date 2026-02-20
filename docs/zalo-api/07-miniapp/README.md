@@ -2,21 +2,20 @@
 
 SDK для разработки Mini App в Zalo.
 
-**Реализация:** [`crates/zalo-sdk/`](../../crates/zalo-sdk/)
+**Реализация:** ✅ [`crates/zalo-sdk/`](../../crates/zalo-sdk/)
 
 ---
 
 ## Категории
 
-| Раздел | Файл | Реализация |
-|--------|------|------------|
-| **User** | [user/README.md](user/README.md) | [`auth.rs`](../../crates/zalo-sdk/src/auth.rs), [`user.rs`](../../crates/zalo-sdk/src/user.rs) |
-| **Storage** | [storage/README.md](storage/README.md) | [`storage.rs`](../../crates/zalo-sdk/src/storage.rs) |
-| **Payment** | [payment/README.md](payment/README.md) | [`payment.rs`](../../crates/zalo-sdk/src/payment.rs) |
-| **Navigation** | [navigation/README.md](navigation/README.md) | [`navigation.rs`](../../crates/zalo-sdk/src/navigation.rs) |
-| **Location** | [location/README.md](../07-miniapp/location.md) | [`location.rs`](../../crates/zalo-sdk/src/location.rs) |
-| **Events** | [events/README.md](events/README.md) | [`lifecycle.rs`](../../crates/zalo-sdk/src/lifecycle.rs) |
-| **Share** | [share/README.md](share.md) | [`share.rs`](../../crates/zalo-sdk/src/share.rs) |
+| Раздел | Статус | Файл |
+|--------|--------|------|
+| **User** | ✅ | [user/README.md](user/README.md) |
+| **Storage** | ✅ | [storage/README.md](storage/README.md) |
+| **Payment** | ✅ | [payment/README.md](payment/README.md) |
+| **Navigation** | ✅ | [navigation/README.md](navigation/README.md) |
+| **Events** | ✅ | [events/README.md](events/README.md) |
+| **Share** | ✅ | [share.md](share.md) |
 
 ---
 
@@ -32,7 +31,7 @@ let ctx = MiniAppContext::new("app_id", "oa_id")?;
 let payload = ctx.handshake_payload();
 ```
 
-**Пример:** [`examples/miniapp-leptos/`](../../examples/miniapp-leptos/)
+**Файл:** [`context.rs`](../../crates/zalo-sdk/src/context.rs)
 
 ---
 

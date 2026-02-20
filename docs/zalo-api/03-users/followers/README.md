@@ -2,33 +2,46 @@
 
 Пагинированный список followers.
 
-**Реализация:** [`client.rs`](../../crates/zalo-http/src/client.rs#L158-L180)
+**Реализация:** ✅ [`client_inner/client.rs:176-191`](../../crates/zalo-http/src/client_inner/client.rs#L176-L191)
 
 ---
 
 ## list_followers
 
 ```rust
-use zalo_http::{OaClient, types::FollowerListQuery};
+use zalo_http::{OaClient, zalo_types::FollowerListQuery};
 
 let client = OaClient::new("TOKEN")?;
 
 // Первая страница
-let query = FollowerListQuery::first_page(50);
+let query = FollowerListQuery {
+    offset: Some(0),
+    count: Some(50),
+};
 let page = client.list_followers(query).await?;
 
 // Следующая страница
-let query = FollowerListQuery::page_after(50, 50);
+let query = FollowerListQuery {
+    offset: Some(50),
+    count: Some(50),
+};
 ```
 
 **Endpoint:** `GET /v3.0/oa/user/getlist`
 
-**Структуры:** [`types.rs`](../../crates/zalo-http/src/types.rs#L165-L190)
+**Структуры:**
+- [`FollowerList`](../../crates/zalo-types/src/user.rs#L38-L43)
+- [`FollowerListQuery`](../../crates/zalo-types/src/user.rs#L28-L35)
 
 ```rust
 pub struct FollowerListQuery {
-    pub offset: u64,
-    pub count: u64,  // макс. 50
+    pub offset: Option<i32>,
+    pub count: Option<i32>,
+}
+
+pub struct FollowerList {
+    pub data: Vec<String>,
+    pub total: i32,
 }
 ```
 

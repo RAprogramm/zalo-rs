@@ -3,8 +3,8 @@
 OAuth 2.0 и управление токенами.
 
 **Реализация:**
-- OAuth: [`crates/zalo-http/src/oauth.rs`](../../crates/zalo-http/src/oauth.rs)
-- Tokens: [`crates/zalo-http/src/token_manager.rs`](../../crates/zalo-http/src/token_manager.rs)
+- ✅ OAuth: [`crates/zalo-http/src/oauth.rs`](../../crates/zalo-http/src/oauth.rs)
+- ✅ Tokens: [`crates/zalo-http/src/client/token.rs`](../../crates/zalo-http/src/client/token.rs)
 
 ---
 
@@ -22,11 +22,15 @@ let tokens = oauth.get_access_token("auth_code").await?;
 let new_tokens = oauth.refresh_token("refresh_token").await?;
 ```
 
+**Методы:**
+- ✅ `get_access_token()` — [`oauth.rs:54-78`](../../crates/zalo-http/src/oauth.rs#L54-L78)
+- ✅ `refresh_token()` — [`oauth.rs:85-109`](../../crates/zalo-http/src/oauth.rs#L85-L109)
+
 ---
 
 ## TokenManager
 
-**Файл:** [`token_manager.rs`](../../crates/zalo-http/src/token_manager.rs#L140-L180)
+**Файл:** [`client/token.rs`](../../crates/zalo-http/src/client/token.rs)
 
 Авто-обновление токенов.
 
@@ -38,6 +42,12 @@ manager.initialize_with_code("auth_code").await?;
 let token = manager.get_valid_token().await?;
 ```
 
+**Методы:**
+- ✅ `initialize_with_code()` — [`token.rs:48-55`](../../crates/zalo-http/src/client/token.rs#L48-L55)
+- ✅ `initialize_with_tokens()` — [`token.rs:57-69`](../../crates/zalo-http/src/client/token.rs#L57-L69)
+- ✅ `get_valid_token()` — [`token.rs:71-82`](../../crates/zalo-http/src/client/token.rs#L71-L82)
+- ✅ `refresh_tokens()` — [`token.rs:103-118`](../../crates/zalo-http/src/client/token.rs#L103-L118)
+
 **Особенности:**
 - ✅ Авто-обновление за 5 мин до истечения
 - ✅ SecureToken с zeroize
@@ -47,7 +57,7 @@ let token = manager.get_valid_token().await?;
 
 ## SecureToken
 
-Безопасное хранение.
+**Файл:** [`client/token/secure.rs`](../../crates/zalo-http/src/client/token/secure.rs)
 
 ```rust
 pub struct SecureToken {
@@ -60,6 +70,18 @@ impl Drop for SecureToken {
     }
 }
 ```
+
+---
+
+## Структуры
+
+| Структура | Файл |
+|-----------|------|
+| `OAuthClient` | [`oauth.rs:36-52`](../../crates/zalo-http/src/oauth.rs#L36-L52) |
+| `OAuthTokenResponse` | [`oauth_types.rs:8-15`](../../crates/zalo-http/src/oauth_types.rs#L8-L15) |
+| `TokenManager` | [`token.rs:16-24`](../../crates/zalo-http/src/client/token.rs#L16-L24) |
+| `AccessTokenInfo` | [`token/info.rs:14-26`](../../crates/zalo-http/src/client/token/info.rs#L14-L26) |
+| `SecureToken` | [`token/secure.rs:13-47`](../../crates/zalo-http/src/client/token/secure.rs#L13-L47) |
 
 ---
 
@@ -79,10 +101,10 @@ redirect_uri = "https://redirect"
 
 ## Ошибки
 
-| Код | Тип |
-|-----|-----|
-| `-204` | `Unauthorized` |
-| `-240` | `Unauthorized` |
+| Код | Тип | Обработка |
+|-----|-----|-----------|
+| `-204` | `Unauthorized` | [`error.rs:74`](../../crates/zalo-http/src/error.rs#L74) |
+| `-240` | `Unauthorized` | [`error.rs:74`](../../crates/zalo-http/src/error.rs#L74) |
 
 ---
 

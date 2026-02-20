@@ -1,44 +1,40 @@
 # Примеры использования
 
-## 1. Отправка сообщения
+## 1. Отправка сообщения ✅
+
+**Файл:** [`client_inner/client.rs`](../../crates/zalo-http/src/client_inner/client.rs)
 
 ```rust
-use zalo_http::client::OaClient;
+use zalo_http::OaClient;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = OaClient::new("YOUR_ACCESS_TOKEN")?;
-    
+
     // Текстовое сообщение
     let msg_id = client
         .send_text_message("USER_ID", "Привет!")
         .await?;
-    
+
     println!("Отправлено: {}", msg_id);
-    
+
     Ok(())
 }
 ```
 
 ---
 
-## 2. Обработка вебхука на Axum
+## 2. Обработка вебхука на Axum ✅
+
+**Файл:** [`zalo-bot/src/webhook_event.rs`](../../crates/zalo-bot/src/webhook_event.rs)
 
 ```rust
-use axum::{
-    extract::State,
-    http::HeaderMap,
-    routing::post,
-    Router,
-};
-use bytes::Bytes;
-use zalo_bot::WebhookVerifier;
-use zalo_types::AppError;
+use axum::{extract::State, http::HeaderMap, body::Bytes};
+use zalo_bot::{WebhookVerifier, ValidatedWebhookEvent};
 
 #[derive(Clone)]
 struct AppState {
     verifier: WebhookVerifier,
-    client: OaClient,
 }
 
 async fn webhook_handler(
@@ -46,200 +42,139 @@ async fn webhook_handler(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<String, AppError> {
-    // Проверяем подпись
     let signature = headers
         .get("x-zalo-hmac-sha256")
         .and_then(|v| v.to_str().ok());
-    
-    state.verifier.verify(&body, signature)?;
-    
-    // Парсим событие
-    let event: WebhookEvent = serde_json::from_slice(&body)?;
-    
-    // Обрабатываем
-    match event.event_name {
+
+    let event = ValidatedWebhookEvent::parse(&body, signature, &state.verifier)?;
+
+    match event.event_type() {
         WebhookEventType::Follow => {
-            println!("Новый подписчик: {}", event.sender.id);
-            
-            // Отправляем приветственное сообщение
-            state.client
-                .send_text_message(&event.sender.id, "Добро пожаловать!")
-                .await?;
+            println!("Новый подписчик: {}", event.sender_id());
         }
         WebhookEventType::UserSendText => {
-            if let Some(msg) = event.message {
-                let text = msg.text.unwrap_or_default();
+            if let Some(text) = event.message_text() {
                 println!("Сообщение: {}", text);
-                
-                // Эхо-ответ
-                state.client
-                    .send_text_message(&event.sender.id, format!("Вы написали: {}", text))
-                    .await?;
             }
         }
-        _ => {
-            println!("Событие: {:?}", event.event_name);
-        }
+        _ => {}
     }
-    
-    Ok("OK".to_string())
-}
 
-#[tokio::main]
-async fn main() {
-    let verifier = WebhookVerifier::new("SECRET")?;
-    let client = OaClient::new("TOKEN")?;
-    
-    let state = AppState { verifier, client };
-    
-    let app = Router::new()
-        .route("/webhook", post(webhook_handler))
-        .with_state(state);
-    
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-    axum::serve(listener, app).await?;
+    Ok("OK".to_string())
 }
 ```
 
 ---
 
-## 3. Mini App инициализация
+## 3. Mini App инициализация ✅
+
+**Файл:** [`zalo-sdk/src/context.rs`](../../crates/zalo-sdk/src/context.rs)
 
 ```rust
-use zalo_sdk::{MiniAppContext, auth::AuthorizeRequest};
+use zalo_sdk::MiniAppContext;
 
 fn init_mini_app() -> Result<(), Box<dyn std::error::Error>> {
     let context = MiniAppContext::new("my-app-id", "my-oa-id")?;
-    
     let payload = context.handshake_payload();
-    
-    // Serialise и отправить хосту
+
     let json = serde_json::to_string(&payload)?;
-    
     println!("Handshake payload: {}", json);
-    
+
     Ok(())
 }
 ```
 
 ---
 
-## 4. Получение списка подписчиков
+## 4. Получение списка подписчиков ✅
+
+**Файл:** [`client_inner/client.rs`](../../crates/zalo-http/src/client_inner/client.rs)
 
 ```rust
-use zalo_http::{client::OaClient, types::FollowerListQuery};
+use zalo_http::{OaClient, zalo_types::FollowerListQuery};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = OaClient::new("TOKEN")?;
-    
-    // Первая страница
-    let mut query = FollowerListQuery::first_page(50);
-    let mut all_followers = Vec::new();
-    
-    loop {
-        let page = client.list_followers(query).await?;
-        all_followers.extend(page.followers);
-        
-        if all_followers.len() >= page.total as usize {
-            break;
-        }
-        
-        query = FollowerListQuery::page_after(
-            query.offset + query.count,
-            query.count
-        );
+
+    let query = FollowerListQuery {
+        offset: Some(0),
+        count: Some(50),
+    };
+
+    let page = client.list_followers(query).await?;
+
+    println!("Всего: {}", page.total);
+    for id in &page.data {
+        println!("- {}", id);
     }
-    
-    println!("Всего подписчиков: {}", all_followers.len());
-    
-    for follower in all_followers {
-        println!("- {} ({})", follower.display_name, follower.user_id);
-    }
-    
+
     Ok(())
 }
 ```
 
 ---
 
-## 5. Массовое добавление тега
+## 5. Массовое добавление тега ✅
+
+**Файл:** [`client_inner/client.rs`](../../crates/zalo-http/src/client_inner/client.rs)
 
 ```rust
-use zalo_http::client::OaClient;
+use zalo_http::{OaClient, zalo_types::TagFollowerRequest};
 
-const BATCH_SIZE: usize = 100;
-
-pub async fn tag_users_in_batches(
+pub async fn tag_users(
     client: &OaClient,
     tag_id: &str,
     user_ids: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut total_success = 0;
-    let mut total_failures = 0;
-    
-    for chunk in user_ids.chunks(BATCH_SIZE) {
-        let result = client
-            .tag_follower(tag_id, chunk.to_vec())
-            .await?;
-        
-        total_success += result.success_count;
-        total_failures += result.failures.len() as u64;
-        
-        println!("Обработано: {}", chunk.len());
+    let request = TagFollowerRequest {
+        tag_id: tag_id.to_string(),
+        uids: user_ids,
+    };
+
+    let result = client.tag_followers(request).await?;
+
+    println!("Успешно: {}", result.success_count);
+    for failure in &result.failures {
+        eprintln!("Ошибка {}: {}", failure.user_id, failure.message);
     }
-    
-    println!("Успешно: {}", total_success);
-    println!("Ошибок: {}", total_failures);
-    
+
     Ok(())
 }
 ```
 
 ---
 
-## 6. Загрузка и отправка изображения
+## 6. Загрузка изображения ✅
+
+**Файл:** [`media/client.rs`](../../crates/zalo-http/src/media/client.rs)
 
 ```rust
-use reqwest::multipart::{Form, Part};
-use std::fs::File;
+use zalo_http::media::MediaManager;
 
-pub async fn send_image_with_upload(
-    client: &OaClient,
-    user_id: &str,
-    image_path: &str,
-    caption: Option<&str>,
-) -> Result<String, Box<dyn std::error::Error>> {
-    // Загружаем изображение
-    let file = File::open(image_path)?;
-    let part = Part::reader(file)
-        .file_name("image.jpg")
-        .mime_str("image/jpeg")?;
-    
-    let form = Form::new().part("file", part);
-    
-    let http_client = reqwest::Client::new();
-    let response = http_client
-        .post("https://openapi.zalo.me/v3.0/oa/upload/image")
-        .header("access_token", "YOUR_TOKEN")
-        .multipart(form)
-        .send()
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let manager = MediaManager::new("ACCESS_TOKEN")?;
+
+    // Из файла
+    let result = manager.upload_image("image.jpg").await?;
+    println!("File ID: {}", result.file_id);
+
+    // Из URL
+    let result = manager
+        .upload_image_from_url("https://example.com/image.jpg")
         .await?;
-    
-    let upload_result: MediaUploadResponse = response.json().await?;
-    
-    // Отправляем сообщение с file_id
-    let msg_id = client
-        .send_image_message(user_id, &upload_result.file_id, caption)
-        .await?;
-    
-    Ok(msg_id)
+    println!("URL: {}", result.url);
+
+    Ok(())
 }
 ```
 
 ---
 
-## 7. Конфигурация приложения
+## 7. Конфигурация приложения ✅
+
+**Файл:** [`zalo-types/src/config.rs`](../../crates/zalo-types/src/config.rs)
 
 ```toml
 # config.toml
@@ -248,41 +183,32 @@ environment = "production"
 [logging]
 filter = "info,zalo_http=debug"
 format = "json"
-
-[zalo_oauth]
-app_id = "YOUR_APP_ID"
-redirect_uri = "https://yourapp.com/callback"
-
-# Секреты лучше хранить в env:
-# ZALO_OAUTH__SECRET_KEY=...
-# ZALO_BOT__WEBHOOK_SECRET=...
 ```
 
 ```rust
-use zalo_types::{AppConfig, ConfigLoader, Environment};
+use zalo_types::{ConfigLoader, AppConfig};
 
 fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
     let config = ConfigLoader::default()
         .with_file_path("config.toml")
         .load()?;
-    
+
     println!("Environment: {}", config.environment().as_str());
     println!("Log filter: {}", config.logging().filter());
-    
+
     Ok(config)
 }
 ```
 
 ---
 
-## 8. Полное приложение бота
+## 8. Полное приложение бота ✅
 
 ```rust
-use axum::{Router, routing::post};
-use tracing::{info, error};
-use zalo_bot::{init_tracing, WebhookVerifier};
-use zalo_http::client::OaClient;
-use zalo_types::{ConfigLoader, AppError};
+use axum::{Router, routing::post, extract::State, http::HeaderMap, body::Bytes};
+use zalo_bot::{init_tracing, WebhookVerifier, ValidatedWebhookEvent};
+use zalo_http::OaClient;
+use zalo_types::ConfigLoader;
 
 #[derive(Clone)]
 struct AppState {
@@ -291,35 +217,22 @@ struct AppState {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), AppError> {
-    // Загружаем конфигурацию
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = ConfigLoader::default().load()?;
-    
-    // Инициализируем логирование
     init_tracing(&config)?;
-    
-    info!("Starting Zalo Bot...");
-    info!("Environment: {}", config.environment().as_str());
-    
-    // Создаём клиенты
+
     let verifier = WebhookVerifier::new("WEBHOOK_SECRET")?;
     let client = OaClient::new("ACCESS_TOKEN")?;
-    
+
     let state = AppState { verifier, client };
-    
-    // Настраиваем роуты
+
     let app = Router::new()
         .route("/webhook", post(webhook_handler))
-        .route("/health", post(|| async { "OK" }))
         .with_state(state);
-    
-    // Запускаем сервер
-    let addr = "0.0.0.0:3000";
-    info!("Listening on {}", addr);
-    
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
 
@@ -327,12 +240,33 @@ async fn webhook_handler(
     State(state): State<AppState>,
     headers: HeaderMap,
     body: Bytes,
-) -> Result<String, AppError> {
-    // ... обработка вебхука
+) -> Result<String, Box<dyn std::error::Error>> {
+    let signature = headers
+        .get("x-zalo-hmac-sha256")
+        .and_then(|v| v.to_str().ok());
+
+    let event = ValidatedWebhookEvent::parse(&body, signature, &state.verifier)?;
+
+    match event.event_type() {
+        WebhookEventType::Follow => {
+            state.client
+                .send_text_message(event.sender_id(), "Добро пожаловать!")
+                .await?;
+        }
+        WebhookEventType::UserSendText => {
+            if let Some(text) = event.message_text() {
+                state.client
+                    .send_text_message(event.sender_id(), format!("Вы: {}", text))
+                    .await?;
+            }
+        }
+        _ => {}
+    }
+
     Ok("OK".to_string())
 }
 ```
 
 ---
 
-[← Ошибки](../08-errors/README.md) | [← К началу](../README.md)
+[← Ошибки](08-errors/README.md) | [← К началу](README.md)

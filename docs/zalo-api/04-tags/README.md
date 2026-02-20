@@ -2,26 +2,35 @@
 
 Управление тегами подписчиков.
 
-**Реализация:** В разработке (см. [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md))
+**Реализация:** ✅ [`client_inner/client.rs`](../../crates/zalo-http/src/client_inner/client.rs)
 
 ---
 
 ## Методы
 
-| Метод | Файл | Описание |
-|-------|------|----------|
-| **List** | [list/README.md](list/README.md) | Список тегов |
-| **Operations** | [operations/README.md](operations/README.md) | Добавить/удалить |
+| Метод | Статус | Файл |
+|-------|--------|------|
+| **List** | ✅ | [list/README.md](list/README.md) |
+| **Operations** | ✅ | [operations/README.md](operations/README.md) |
 
 ---
 
 ## Структуры
+
+**Файл:** [`zalo-types/src/tag.rs`](../../crates/zalo-types/src/tag.rs)
 
 ```rust
 pub struct TagInfo {
     pub id: String,
     pub name: String,
     pub follower_count: u64,
+}
+
+pub struct TagList {
+    pub tags: Vec<TagInfo>,
+    pub total: u64,
+    pub page: u64,
+    pub page_size: u64,
 }
 ```
 

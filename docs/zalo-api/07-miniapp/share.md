@@ -2,7 +2,7 @@
 
 Шеринг в Zalo.
 
-**Реализация:** [`crates/zalo-sdk/src/share.rs`](../../crates/zalo-sdk/src/share.rs)
+**Реализация:** ✅ [`crates/zalo-sdk/src/share.rs`](../../crates/zalo-sdk/src/share.rs)
 
 ---
 
@@ -19,7 +19,7 @@ let request = ShareRequest::new()
 let response = share(request)?;
 ```
 
-**Структуры:** [`share.rs`](../../crates/zalo-sdk/src/share.rs#L15-L40)
+**Файл:** [`share.rs`](../../crates/zalo-sdk/src/share.rs)
 
 ---
 

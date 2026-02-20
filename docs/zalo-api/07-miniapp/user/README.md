@@ -2,7 +2,7 @@
 
 Аутентификация и получение данных пользователя.
 
-**Реализация:** [`crates/zalo-sdk/src/auth.rs`](../../crates/zalo-sdk/src/auth.rs), [`user.rs`](../../crates/zalo-sdk/src/user.rs)
+**Реализация:** ✅ [`crates/zalo-sdk/src/auth.rs`](../../crates/zalo-sdk/src/auth.rs), [`user.rs`](../../crates/zalo-sdk/src/user.rs)
 
 ---
 
@@ -17,7 +17,7 @@ let request = AuthorizeRequest::new(app_id)
     .with_scopes(vec!["user_info", "phone_number"]);
 ```
 
-**Структуры:** [`auth.rs`](../../crates/zalo-sdk/src/auth.rs#L15-L40)
+**Файл:** [`auth.rs`](../../crates/zalo-sdk/src/auth.rs)
 
 ---
 
@@ -32,7 +32,7 @@ let info: UserInfo = get_user_info()?;
 println!("{}", info.display_name);
 ```
 
-**Структуры:** [`user.rs`](../../crates/zalo-sdk/src/user.rs#L20-L50)
+**Структура:**
 
 ```rust
 pub struct UserInfo {
@@ -43,6 +43,8 @@ pub struct UserInfo {
     pub birthday: Option<Birthday>,
 }
 ```
+
+**Файл:** [`user.rs`](../../crates/zalo-sdk/src/user.rs)
 
 ---
 
@@ -56,7 +58,7 @@ use zalo_sdk::user::GetPhoneNumberRequest;
 let request = GetPhoneNumberRequest::new(app_id);
 ```
 
-**Структуры:** [`user.rs`](../../crates/zalo-sdk/src/user.rs#L55-L80)
+**Файл:** [`user.rs`](../../crates/zalo-sdk/src/user.rs)
 
 ---
 

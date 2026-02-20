@@ -2,7 +2,7 @@
 
 Оплата через Zalo Pay.
 
-**Реализация:** [`crates/zalo-sdk/src/payment.rs`](../../crates/zalo-sdk/src/payment.rs)
+**Реализация:** ✅ [`crates/zalo-sdk/src/payment.rs`](../../crates/zalo-sdk/src/payment.rs)
 
 ---
 
@@ -19,7 +19,7 @@ let request = CheckoutRequest::new()
 let response = checkout(request)?;
 ```
 
-**Структуры:** [`payment.rs`](../../crates/zalo-sdk/src/payment.rs#L15-L60)
+**Файл:** [`payment.rs`](../../crates/zalo-sdk/src/payment.rs)
 
 ---
 

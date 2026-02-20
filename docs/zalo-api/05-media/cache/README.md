@@ -1,16 +1,15 @@
 # Кэширование медиа
 
-Менеджер кэширования file_id.
-
-**Статус:** В разработке
+**Статус:** ⏳ В разработке
 
 ---
 
-## MediaManager
+## Планируемый API
 
 ```rust
-// Планируемый API
-let manager = MediaManager::new(client);
+use zalo_http::media::MediaManager;
+
+let manager = MediaManager::new("ACCESS_TOKEN")?;
 
 // Загрузка с кэшированием
 let file_id = manager.upload_and_cache("image.jpg").await?;

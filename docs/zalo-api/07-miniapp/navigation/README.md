@@ -2,7 +2,7 @@
 
 Навигация и WebView.
 
-**Реализация:** [`crates/zalo-sdk/src/navigation.rs`](../../crates/zalo-sdk/src/navigation.rs)
+**Реализация:** ✅ [`crates/zalo-sdk/src/navigation.rs`](../../crates/zalo-sdk/src/navigation.rs)
 
 ---
 
@@ -17,6 +17,10 @@ let request = OpenWebviewRequest::new(
 );
 ```
 
+**Файл:** [`navigation.rs`](../../crates/zalo-sdk/src/navigation.rs)
+
+---
+
 ## closeApp
 
 ```rust
@@ -25,7 +29,7 @@ use zalo_sdk::navigation::close_app;
 close_app();
 ```
 
-**Структуры:** [`navigation.rs`](../../crates/zalo-sdk/src/navigation.rs#L15-L50)
+**Файл:** [`navigation.rs`](../../crates/zalo-sdk/src/navigation.rs)
 
 ---
 

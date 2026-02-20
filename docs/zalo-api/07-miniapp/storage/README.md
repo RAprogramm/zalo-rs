@@ -2,7 +2,7 @@
 
 Кэш ключ-значение для Mini App.
 
-**Реализация:** [`crates/zalo-sdk/src/storage.rs`](../../crates/zalo-sdk/src/storage.rs)
+**Реализация:** ✅ [`crates/zalo-sdk/src/storage.rs`](../../crates/zalo-sdk/src/storage.rs)
 
 ---
 
@@ -25,7 +25,7 @@ let response = get_storage(request)?;
 - Ключ: макс. 128 байт
 - Значение: макс. 4096 байт
 
-**Структуры:** [`storage.rs`](../../crates/zalo-sdk/src/storage.rs#L15-L70)
+**Файл:** [`storage.rs`](../../crates/zalo-sdk/src/storage.rs)
 
 ---
 

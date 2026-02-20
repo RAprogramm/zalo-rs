@@ -2,13 +2,13 @@
 
 Унифицированная система ошибок.
 
-**Реализация:** [`crates/zalo-http/src/error.rs`](../../crates/zalo-http/src/error.rs)
+**Реализация:** ✅ [`crates/zalo-http/src/error.rs`](../../crates/zalo-http/src/error.rs)
 
 ---
 
 ## HttpError
 
-**Файл:** [`error.rs`](../../crates/zalo-http/src/error.rs#L10-L35)
+**Файл:** [`error.rs`](../../crates/zalo-http/src/error.rs#L14-L38)
 
 ```rust
 pub enum HttpError {
@@ -17,6 +17,8 @@ pub enum HttpError {
     RateLimited,      // -210
     Unauthorized,     // -204, -240
     Configuration(String),
+    UnexpectedStatus { status: u16, body: String },
+    Deserialization(#[from] serde_json::Error),
 }
 ```
 
@@ -24,32 +26,45 @@ pub enum HttpError {
 
 ## Коды ошибок
 
-| Код | Тип | Значение |
-|-----|-----|----------|
-| `-204` | `Unauthorized` | Токен истёк |
-| `-210` | `RateLimited` | Лимит 10 req/s |
-| `-213` | `Api` | Не подписан |
-| `-214` | `Api` | Вне 24h окна |
+| Код | Тип | Значение | Обработка |
+|-----|-----|----------|-----------|
+| `-204` | `Unauthorized` | Токен истёк | [`error.rs:74`](../../crates/zalo-http/src/error.rs#L74) |
+| `-240` | `Unauthorized` | Токен недействителен | [`error.rs:74`](../../crates/zalo-http/src/error.rs#L74) |
+| `-210` | `RateLimited` | Лимит 10 req/s | [`error.rs:75`](../../crates/zalo-http/src/error.rs#L75) |
+| `-213` | `Api` | Не подписан | [`error.rs:76`](../../crates/zalo-http/src/error.rs#L76) |
+| `-214` | `Api` | Вне 24h окна | [`error.rs:76`](../../crates/zalo-http/src/error.rs#L76) |
 
-**Полный список:** [`error.rs`](../../crates/zalo-http/src/error.rs#L45-L55)
+**Полный список:** [`error.rs:70-82`](../../crates/zalo-http/src/error.rs#L70-L82)
 
 ---
 
-## Маппинг
+## Маппинг на AppError
 
-**Файл:** [`error.rs`](../../crates/zalo-http/src/error.rs#L58-L80)
+**Файл:** [`error.rs`](../../crates/zalo-http/src/error.rs#L90-L110)
 
 ```rust
 impl From<HttpError> for AppError {
     fn from(error: HttpError) -> Self {
         match &error {
+            HttpError::Transport(_) => AppError::with(Network, ..),
             HttpError::Unauthorized => AppError::with(Unauthorized, ..),
             HttpError::RateLimited => AppError::with(RateLimited, ..),
+            HttpError::Configuration(_) => AppError::with(Config, ..),
             _ => AppError::with(Internal, ..),
         }
     }
 }
 ```
+
+---
+
+## Тесты
+
+```bash
+cargo test -p zalo-http error
+```
+
+**Результаты:** ✅ 10 тестов passing
 
 ---
 
