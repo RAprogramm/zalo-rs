@@ -36,8 +36,12 @@ pub mod oauth_types;
 /// API request and response models.
 pub mod types;
 
+/// Rate limiter for API requests.
+pub mod rate_limiter;
+
 pub use client::OaClient;
 pub use client::token::{AccessTokenInfo, SecureToken, TokenManager};
 pub use error::{HttpError, HttpResult};
 pub use oauth::OAuthClient;
 pub use oauth_types::OAuthTokenResponse;
+pub use rate_limiter::RateLimiter;
