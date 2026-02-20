@@ -1,7 +1,7 @@
 # Покрытие Zalo Official Account API
 
 > **Последнее обновление:** Февраль 2026
-> **Статус:** 100% покрытие API
+> **Статус:** ✅ 100% покрытие API
 
 ---
 
@@ -10,16 +10,16 @@
 | Категория | Методов | Реализовано | В работе | Осталось |
 |-----------|---------|-------------|----------|----------|
 | **Auth & Tokens** | 4 | ✅ 4 | — | — |
-| **Messaging** | 6 | ✅ 4 | — | 2 |
-| **Users** | 5 | ✅ 4 | — | 1 |
+| **Messaging** | 6 | ✅ 6 | — | — |
+| **Users** | 5 | ✅ 5 | — | — |
 | **Tags** | 3 | ✅ 3 | — | — |
 | **Media** | 6 | ✅ 6 | — | — |
 | **Conversations** | 2 | ✅ 2 | — | — |
-| **Store** | 6 | ⏳ 0 | — | 6 |
-| **Articles** | 5 | ⏳ 0 | — | 5 |
+| **Store** | 6 | ✅ 6 | — | — |
+| **Articles** | 5 | ✅ 5 | — | — |
 | **Webhooks** | 12 | ✅ 12 | — | — |
 | **Mini App SDK** | 15 | ✅ 15 | — | — |
-| **ИТОГО** | **58** | **46 (79%)** | **—** | **14** |
+| **ИТОГО** | **64** | **64 (100%)** | **—** | **—** |
 
 ---
 
@@ -121,7 +121,7 @@
 
 | Метод | Статус | Реализация | Тесты |
 |-------|--------|------------|-------|
-| `get_user_profile()` | ✅ | [`client_inner/client.rs:162-174`](../crates/zalo-http/src/client_inner/client.rs#L162-L174) | ✅ |
+| `get_user_profile()` | ✅ | [`client_inner/client.rs:183-195`](../crates/zalo-http/src/client_inner/client.rs#L183-L195) | ✅ |
 
 **Структуры:**
 - ✅ `UserProfile` — [`user.rs:10-23`](../crates/zalo-types/src/user.rs#L10-L23)
@@ -132,22 +132,13 @@
 
 | Метод | Статус | Реализация | Тесты |
 |-------|--------|------------|-------|
-| `list_followers()` | ✅ | [`client_inner/client.rs:176-191`](../crates/zalo-http/src/client_inner/client.rs#L176-L191) | ✅ |
+| `list_followers()` | ✅ | [`client_inner/client.rs:197-212`](../crates/zalo-http/src/client_inner/client.rs#L197-L212) | ✅ |
+| `update_follower_info()` | ✅ | [`client_inner/client.rs:214-226`](../crates/zalo-http/src/client_inner/client.rs#L214-L226) | ✅ |
 
 **Структуры:**
 - ✅ `FollowerList` — [`user.rs:38-43`](../crates/zalo-types/src/user.rs#L38-L43)
 - ✅ `FollowerListQuery` — [`user.rs:28-35`](../crates/zalo-types/src/user.rs#L28-L35)
-
----
-
-### ⏳ Обновление подписчика
-
-| Метод | Статус | Реализация | Тесты |
-|-------|--------|------------|-------|
-| `update_follower_info()` | ⏳ | — | — |
-
-**Требуемые структуры:**
-- ⏳ `UpdateFollowerRequest`
+- ✅ `UpdateFollowerRequest` — [`user.rs:46-126`](../crates/zalo-types/src/user.rs#L46-L126)
 
 ---
 
@@ -230,31 +221,32 @@
 
 ## 7. Магазин (Store API)
 
-### ⏳ Товары
+### ✅ Товары
 
 | Метод | Статус | Реализация | Тесты |
 |-------|--------|------------|-------|
-| `create_product()` | ⏳ | — | — |
-| `update_product()` | ⏳ | — | — |
-| `get_product()` | ⏳ | — | — |
+| `create_product()` | ✅ | [`client_inner/client.rs:307-323`](../crates/zalo-http/src/client_inner/client.rs#L307-L323) | ✅ |
+| `update_product()` | ✅ | [`client_inner/client.rs:325-342`](../crates/zalo-http/src/client_inner/client.rs#L325-L342) | ✅ |
+| `get_product()` | ✅ | [`client_inner/client.rs:344-361`](../crates/zalo-http/src/client_inner/client.rs#L344-L361) | ✅ |
+| `list_products()` | ✅ | [`client_inner/client.rs:363-385`](../crates/zalo-http/src/client_inner/client.rs#L363-L385) | ✅ |
 
-**Структуры (готовы):**
+**Структуры:**
 - ✅ `StoreProduct` — [`store.rs:22-39`](../crates/zalo-types/src/store.rs#L22-L39)
 - ✅ `CreateProductRequest` — [`store.rs:42-54`](../crates/zalo-types/src/store.rs#L42-L54)
 - ✅ `ProductStatus` — [`store.rs:10-18`](../crates/zalo-types/src/store.rs#L10-L18)
 
 ---
 
-### ⏳ Заказы
+### ✅ Заказы
 
 | Метод | Статус | Реализация | Тесты |
 |-------|--------|------------|-------|
-| `create_order()` | ⏳ | — | — |
-| `update_order()` | ⏳ | — | — |
-| `get_order()` | ⏳ | — | — |
-| `list_orders()` | ⏳ | — | — |
+| `create_order()` | ✅ | [`client_inner/client.rs:387-403`](../crates/zalo-http/src/client_inner/client.rs#L387-L403) | ✅ |
+| `update_order()` | ✅ | [`client_inner/client.rs:405-431`](../crates/zalo-http/src/client_inner/client.rs#L405-L431) | ✅ |
+| `get_order()` | ✅ | [`client_inner/client.rs:433-450`](../crates/zalo-http/src/client_inner/client.rs#L433-L450) | ✅ |
+| `list_orders()` | ✅ | [`client_inner/client.rs:452-468`](../crates/zalo-http/src/client_inner/client.rs#L452-L468) | ✅ |
 
-**Структуры (готовы):**
+**Структуры:**
 - ✅ `StoreOrder` — [`store.rs:90-107`](../crates/zalo-types/src/store.rs#L90-L107)
 - ✅ `CreateOrderRequest` — [`store.rs:110-124`](../crates/zalo-types/src/store.rs#L110-L124)
 - ✅ `OrderItem` — [`store.rs:73-81`](../crates/zalo-types/src/store.rs#L73-L81)
@@ -267,32 +259,32 @@
 
 ## 8. Контент (Article API)
 
-### ⏳ Статьи
+### ✅ Статьи
 
 | Метод | Статус | Реализация | Тесты |
 |-------|--------|------------|-------|
-| `create_article()` | ⏳ | — | — |
-| `verify_article()` | ⏳ | — | — |
+| `create_article()` | ✅ | [`client_inner/client.rs:475-491`](../crates/zalo-http/src/client_inner/client.rs#L475-L491) | ✅ |
+| `verify_article()` | ✅ | [`client_inner/client.rs:493-509`](../crates/zalo-http/src/client_inner/client.rs#L493-L509) | ✅ |
 
-**Структуры (готовы):**
+**Структуры:**
 - ✅ `ArticleDraft` — [`article.rs:22-38`](../crates/zalo-types/src/article.rs#L22-L38)
 - ✅ `CreateArticleRequest` — [`article.rs:41-56`](../crates/zalo-types/src/article.rs#L41-L56)
 - ✅ `ArticleStatus` — [`article.rs:8-18`](../crates/zalo-types/src/article.rs#L8-L18)
+- ✅ `ArticleVerification` — [`article.rs:82-93`](../crates/zalo-types/src/article.rs#L82-L93)
 
 ---
 
-### ⏳ Видео
+### ✅ Видео
 
 | Метод | Статус | Реализация | Тесты |
 |-------|--------|------------|-------|
-| `upload_video_prepare()` | ⏳ | — | — |
-| `upload_video_verify()` | ⏳ | — | — |
+| `upload_video_prepare()` | ✅ | [`client_inner/client.rs:511-529`](../crates/zalo-http/src/client_inner/client.rs#L511-L529) | ✅ |
+| `upload_video_verify()` | ✅ | [`client_inner/client.rs:531-548`](../crates/zalo-http/src/client_inner/client.rs#L531-L548) | ✅ |
 
-**Структуры (готовы):**
+**Структуры:**
 - ✅ `VideoUploadPrepareResponse` — [`article.rs:59-64`](../crates/zalo-types/src/article.rs#L59-L64)
 - ✅ `VideoUploadPrepareRequest` — [`article.rs:67-72`](../crates/zalo-types/src/article.rs#L67-L72)
 - ✅ `VideoUploadVerifyRequest` — [`article.rs:75-79`](../crates/zalo-types/src/article.rs#L75-L79)
-- ✅ `ArticleVerification` — [`article.rs:82-93`](../crates/zalo-types/src/article.rs#L82-L93)
 
 ---
 
@@ -465,9 +457,14 @@
 
 ## 🔥 Следующие приоритеты
 
-1. **Store API** — 6 методов (типы готовы)
-2. **Article API** — 5 методов (типы готовы)
-3. **`update_follower_info()`** — 1 метод
+Все API методы реализованы (100% покрытие).
+
+### Дальнейшие улучшения:
+
+1. **Интеграционные тесты** — тесты против Zalo API sandbox
+2. **Примеры** — `examples/bot-axum`, `examples/miniapp-leptos`
+3. **Документация** — rustdoc, примеры использования
+4. **Media Cache** — кэширование file_id для повторного использования
 
 ---
 
