@@ -10,6 +10,7 @@ use tracing::debug;
 use zalo_types::message::MessageType;
 use zalo_types::{SendMessageResponse, SendFileRequest, SendImageRequest, SendTemplateRequest, SendTextRequest};
 use zalo_types::tag::{TagFollowerRequest, TagList, TagListQuery, TagOperationResponse};
+use zalo_types::conversation::{ConversationHistory, ConversationQuery, RecentChatList, RecentChatQuery};
 
 use crate::error::{HttpError, HttpResult};
 use zalo_types::user::{FollowerList, FollowerListQuery, UserProfile};
