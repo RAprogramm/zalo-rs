@@ -139,7 +139,7 @@ pub struct TemplateElement {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
     /// Element buttons.
-    #[serde(skip_serializing_if = "Vec::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub buttons: Option<Vec<TemplateButton>>,
 }
 
