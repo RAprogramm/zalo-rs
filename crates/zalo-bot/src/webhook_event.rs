@@ -3,8 +3,7 @@
 
 //! Webhook event parsing and handling.
 
-use serde::{Deserialize, Serialize};
-use zalo_types::{WebhookEvent, WebhookEventType, WebhookMessage};
+use zalo_types::{WebhookEvent, WebhookEventType};
 
 /// Parsed webhook event with validated signature.
 #[derive(Debug, Clone)]

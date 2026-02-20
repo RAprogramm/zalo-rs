@@ -35,7 +35,10 @@ impl From<BotError> for AppError {
         match error {
             BotError::Types(inner) => inner.into(),
             BotError::Observability(inner) => inner.into(),
-            BotError::Signature(inner) => inner.into()
+            BotError::Signature(inner) => inner.into(),
+            BotError::WebhookParse { .. } => {
+                AppError::with(AppErrorKind::Internal, error.to_string())
+            }
         }
     }
 }
