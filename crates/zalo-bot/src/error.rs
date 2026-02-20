@@ -21,7 +21,13 @@ pub enum BotError {
     Observability(#[from] ObservabilityError),
     /// Incoming webhook signature is not valid.
     #[error(transparent)]
-    Signature(#[from] SignatureError)
+    Signature(#[from] SignatureError),
+    /// Webhook payload parsing failed.
+    #[error("webhook parse error: {message}")]
+    WebhookParse {
+        /// Error message.
+        message: String,
+    },
 }
 
 impl From<BotError> for AppError {
