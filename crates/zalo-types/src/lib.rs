@@ -40,7 +40,7 @@ pub use error::{ConfigError, TypesError, TypesResult};
 pub use image::{ImageAttachment, ImagePayload, SendImageRequest};
 pub use masterror::{AppError, AppErrorKind, AppResult};
 pub use media::{MediaUploadResponse, MediaType};
-pub use message::{MessageType, Recipient, SendTextRequest, SendMessageResponse, TextPayload};
+pub use message::{MessageType, Recipient, SendFileRequest, SendTemplateRequest, SendTextRequest, SendMessageResponse, TemplateButton, TemplateElement, TemplatePayload, TextPayload};
 pub use response::ApiResponse;
 pub use store::{CreateOrderRequest, CreateProductRequest, OrderItem, OrderList, OrderListQuery, OrderStatus, ProductStatus, ShippingInfo, StoreOrder, StoreProduct};
 pub use tag::{TagFailure, TagFollowerRequest, TagInfo, TagList, TagListQuery, TagOperationResponse};
