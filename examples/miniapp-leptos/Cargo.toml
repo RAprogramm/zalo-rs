@@ -6,8 +6,9 @@ authors = ["RAprogramm <andrey.rozanov.vl@gmail.com>"]
 license = "MIT"
 publish = false
 
-[lib]
-crate-type = ["cdylib", "rlib"]
+[[bin]]
+name = "miniapp-leptos"
+path = "src/main.rs"
 
 [dependencies]
 leptos = { version = "0.8", features = ["csr"] }
@@ -15,11 +16,12 @@ leptos_meta = "0.8"
 leptos_router = "0.8"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
+console_error_panic_hook = "0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde-wasm-bindgen = "0.6"
 js-sys = "0.3"
-web-sys = { version = "0.3", features = ["console", "Window", "Location"] }
+web-sys = { version = "0.3", features = ["console", "Window", "Location", "HtmlInputElement", "EventTarget"] }
 zalo-sdk = { path = "../../crates/zalo-sdk" }
 wasm-logger = "0.2"
 log = "0.4"

@@ -27,7 +27,7 @@ use super::{create_article, verify_article, upload_video_prepare, upload_video_v
 const REQUEST_TIMEOUT_SECS: u64 = 15;
 
 /// Zalo OA HTTP client.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct OaClient {
     #[allow(dead_code)]
     inner: ReqwestClient,
