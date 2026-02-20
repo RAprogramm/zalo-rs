@@ -14,7 +14,10 @@ pub mod error;
 pub mod observability;
 /// Webhook signature verification helpers.
 pub mod webhook;
+/// Webhook event parsing and dispatch.
+pub mod webhook_event;
 
 pub use error::{BotError, BotResult, ObservabilityError, SignatureError};
 pub use observability::{build_tracing_dispatch, init_tracing};
 pub use webhook::WebhookVerifier;
+pub use webhook_event::{ValidatedWebhookEvent, WebhookDispatcher, WebhookHandler};
