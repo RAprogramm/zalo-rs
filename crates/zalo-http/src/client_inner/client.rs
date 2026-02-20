@@ -15,7 +15,7 @@ use zalo_types::store::{CreateOrderRequest, CreateProductRequest, OrderList, Ord
 use zalo_types::article::{ArticleVerification, ArticleVerificationQuery, CreateArticleRequest, VideoUploadPrepareRequest, VideoUploadPrepareResponse, VideoUploadVerifyRequest};
 
 use crate::error::{HttpError, HttpResult};
-use zalo_types::user::{FollowerList, FollowerListQuery, UpdateFollowerRequest, UserProfile};
+use zalo_types::user::{FollowerList, FollowerListQuery, OaInfo, UpdateFollowerRequest, UserProfile};
 
 use super::AuthenticatedRequest;
 
@@ -201,6 +201,21 @@ impl OaClient {
         let list: FollowerList = self.get(url).query(&query).send_and_parse().await?;
 
         Ok(list)
+    }
+
+    /// Gets OA information.
+    pub async fn get_oa_info(&self) -> HttpResult<OaInfo> {
+        let url = self.endpoint("getoa")?;
+
+        debug!(
+            endpoint = %url,
+            "fetching OA information"
+        );
+
+        let response: OaInfo =
+            self.get(url).send_and_parse().await?;
+
+        Ok(response)
     }
 
     /// Updates follower information.

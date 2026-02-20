@@ -5,6 +5,35 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Official Account information.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OaInfo {
+    /// OA ID.
+    pub id: String,
+    /// OA name.
+    pub name: String,
+    /// OA description.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// OA avatar URL.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar: Option<String>,
+    /// OA cover image URL.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cover: Option<String>,
+    /// Number of followers.
+    pub follower_count: u64,
+    /// OA website URL.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub website: Option<String>,
+    /// OA phone number.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phone: Option<String>,
+    /// OA address.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub address: Option<String>,
+}
+
 /// User profile information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserProfile {

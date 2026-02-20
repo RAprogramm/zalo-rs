@@ -44,5 +44,5 @@ pub use message::{MessageType, Recipient, SendFileRequest, SendTemplateRequest, 
 pub use response::ApiResponse;
 pub use store::{CreateOrderRequest, CreateProductRequest, OrderItem, OrderList, OrderListQuery, OrderStatus, ProductStatus, ShippingInfo, StoreOrder, StoreProduct};
 pub use tag::{TagFailure, TagFollowerRequest, TagInfo, TagList, TagListQuery, TagOperationResponse};
-pub use user::{FollowerList, FollowerListQuery, UpdateFollowerRequest, UserProfile};
+pub use user::{FollowerList, FollowerListQuery, OaInfo, UpdateFollowerRequest, UserProfile};
 pub use webhook::{RecipientInfo, SenderInfo, WebhookEvent, WebhookEventType, WebhookMessage};
