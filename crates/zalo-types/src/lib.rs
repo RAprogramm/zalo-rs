@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 #![deny(missing_docs)]
 //! Shared primitives for the Zalo bot platform.
 //!

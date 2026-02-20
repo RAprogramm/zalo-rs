@@ -63,9 +63,9 @@ pub use navigation::{NavigateRequest, OpenWebviewRequest, RoutePath, SetTitleReq
 pub use payment::{Amount, CheckoutRequest, CheckoutResponse, OrderId, PaymentStatus};
 pub use share::{ShareRequest, ShareResponse, ShareResult};
 pub use storage::{
-    GetStorageRequest, GetStorageResponse, RemoveStorageRequest, SetStorageRequest, StorageKey,
-    StorageValue
+    GetStorageRequest, GetStorageResponse, RemoveStorageRequest, SetStorageRequest
 };
+pub use storage::{StorageKey, StorageValue};
 pub use user::{
     GetPhoneNumberRequest, GetUserInfoRequest, PhoneNumber, PhoneNumberResponse, UserInfo
 };

@@ -12,4 +12,5 @@ masterror.workspace = true
 serde.workspace = true
 
 [dev-dependencies]
+serial_test = "3"
 tempfile = "3"

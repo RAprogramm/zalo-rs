@@ -22,15 +22,15 @@ use crate::error::{BotError, BotResult, ObservabilityError};
 /// use zalo_bot::build_tracing_dispatch;
 /// use zalo_types::ConfigLoader;
 ///
-/// # fn demo() -> Result<(), Box<dyn std::error::Error>> {
-/// let config = ConfigLoader::default().load()?;
-/// let dispatch = build_tracing_dispatch(&config)?;
-/// tracing::dispatcher::with_default(&dispatch, || {
-///     tracing::info!("observability ready");
-/// });
-/// # Ok(())
-/// # }
-/// # demo().expect("example executed");
+/// fn demo() -> Result<(), Box<dyn std::error::Error>> {
+///     let config = ConfigLoader::default().load()?;
+///     let dispatch = build_tracing_dispatch(&config)?;
+///     tracing::dispatcher::with_default(&dispatch, || {
+///         tracing::info!("observability ready");
+///     });
+///     Ok(())
+/// }
+/// demo().expect("example executed");
 /// ```
 pub fn build_tracing_dispatch(config: &AppConfig) -> Result<Dispatch, ObservabilityError> {
     let filter_expression = config.logging().filter().to_owned();

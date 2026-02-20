@@ -25,11 +25,19 @@
 //! ```
 
 /// Typed HTTP client for the Zalo OA API.
+mod client_inner;
 pub mod client;
 /// Error types for the HTTP layer.
 pub mod error;
+/// OAuth 2.0 client for Zalo authentication.
+pub mod oauth;
+/// OAuth request and response types.
+pub mod oauth_types;
 /// API request and response models.
 pub mod types;
 
 pub use client::OaClient;
+pub use client::token::{AccessTokenInfo, SecureToken, TokenManager};
 pub use error::{HttpError, HttpResult};
+pub use oauth::OAuthClient;
+pub use oauth_types::OAuthTokenResponse;
